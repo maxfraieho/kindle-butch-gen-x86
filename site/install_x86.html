@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vydra 🦦 — Розгортання x86 (Windows 11 / WSL2 / CUDA)</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: system-ui, sans-serif; line-height: 1.65; max-width: 44rem;
+         margin: 0 auto; padding: 1.5rem 1.25rem 3rem; background: #101018; color: #e8e8f0; }
+  h1 { font-size: 1.6rem; margin: 0.6rem 0 0.3rem;
+       background: linear-gradient(135deg, #4fd1c5, #2b7a78 55%, #f0b429);
+       -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  h2 { font-size: 1.2rem; margin: 2rem 0 0.6rem; color: #7fd8ce;
+       border-bottom: 1px solid #2b2b3d; padding-bottom: 0.3rem; }
+  h3 { font-size: 1.02rem; margin: 1.2rem 0 0.4rem; color: #cfcfe2; }
+  p, li { margin-bottom: 0.55rem; }
+  ol, ul { padding-left: 1.35rem; }
+  a { color: #8ab4ff; }
+  code, pre { background: #1b1b28; border-radius: 7px; font-size: 0.92em; }
+  code { padding: 0.12em 0.42em; }
+  pre { padding: 0.8rem 1rem; overflow-x: auto; margin: 0.6rem 0 0.9rem;
+        border: 1px solid #2b2b3d; }
+  table { border-collapse: collapse; width: 100%; margin: 0.6rem 0 1rem; font-size: 0.93rem; }
+  th, td { border: 1px solid #2b2b3d; padding: 0.45rem 0.6rem; text-align: left; }
+  th { background: #191926; }
+  .tip { background: #14202a; border-left: 3px solid #4fd1c5; padding: 0.6rem 0.9rem;
+         border-radius: 0 8px 8px 0; margin: 0.8rem 0; font-size: 0.93rem; }
+  .warn { background: #2a1e14; border-left: 3px solid #f0b429; padding: 0.6rem 0.9rem;
+          border-radius: 0 8px 8px 0; margin: 0.8rem 0; font-size: 0.93rem; }
+  .topbar { display: flex; align-items: center; gap: 0.8rem; }
+  .topbar img { width: 54px; height: 54px; border-radius: 50%;
+                border: 2px solid rgba(79,209,197,0.4); }
+  .back { font-size: 0.9rem; }
+  .toc { background: #14141f; border: 1px solid #2b2b3d; border-radius: 10px;
+         padding: 0.8rem 1.1rem; margin: 1rem 0; }
+  .toc a { display: block; padding: 0.14rem 0; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <img src="vydra.jpg" alt="Vydra">
+    <div>
+      <h1>Розгортання Kindle-Butch-Gen (x86 / WSL2)</h1>
+      <a class="back" href="index.html">← про проєкт</a> · <a class="back" href="install.html">📲 Android версія</a>
+    </div>
+  </div>
+
+  <p>Цей посібник описує покроковий процес розгортання та налаштування десктопної версії <b>Kindle-Butch-Gen (x86)</b> для Windows 11 через <b>WSL2</b> з нативною підтримкою <b>NVIDIA CUDA</b> та інфраструктурою <b>Appwrite Sites</b>. Супровід у Telegram: <a href="https://t.me/GetVydraBot">@GetVydraBot</a> (команда <code>/install_x86</code>).</p>
+
+  <nav class="toc">
+    <a href="#req">1. Крок 1 — Передумови та системні вимоги</a>
+    <a href="#repo">2. Крок 2 — Підготовка репозиторію</a>
+    <a href="#appwrite">3. Крок 3 — Інтеграція та деплой в Appwrite Sites</a>
+    <a href="#env">4. Крок 4 — Змінні середовища (Environment Variables)</a>
+    <a href="#backend">5. Крок 5 — Локальний запуск бекенду та CUDA (WSL2 / RTX 3050)</a>
+    <a href="#verify">6. Крок 6 — Перевірка працездатності</a>
+  </nav>
+
+  <h2 id="req">1. Крок 1. Передумови та системні вимоги</h2>
+  <p>Переконайтеся, що ваша десктопна машина відповідає таким вимогам:</p>
+  <table>
+    <tr><th>Компонент</th><th>Вимоги</th></tr>
+    <tr><td>ОС</td><td>Windows 11 із активованим <b>WSL2</b> (Windows Subsystem for Linux) та дистрибутивом <b>Ubuntu 24.04 LTS</b>.</td></tr>
+    <tr><td>GPU</td><td>Дискретна відеокарта NVIDIA (наприклад, <b>RTX 3050</b> або новіша) із актуальними драйверами NVIDIA CUDA на хост-системі.</td></tr>
+    <tr><td>Пам'ять</td><td>16+ GB RAM, 30+ GB вільного місця на SSD.</td></tr>
+    <tr><td>Інструменти</td><td>Встановлений <b>Git</b> та налаштований <b>GitHub CLI (gh)</b>.</td></tr>
+  </table>
+
+  <h2 id="repo">2. Крок 2. Підготовка репозиторію</h2>
+  <p>Десктопна версія проєкту ізольована у репозиторії <code>kindle-butch-gen-x86</code>.</p>
+  <ol>
+    <li>Клонуйте репозиторій на вашу робочу станцію у середовищі WSL2:
+      <pre>git clone https://github.com/maxfraieho/kindle-butch-gen-x86.git
+cd kindle-butch-gen-x86</pre>
+    </li>
+    <li>Переконайтеся, що у корені каталогу присутній скрипт конфігурації <code>deploy.sh</code> та структура веб-панелі у папці <code>kbg_web/</code>.</li>
+  </ol>
+
+  <h2 id="appwrite">3. Крок 3. Інтеграція та деплой в Appwrite Sites</h2>
+  <p>Оскільки додаток має стабільну веб-панель керування, її можна задеплоїти через сервіси <b>Appwrite Sites</b>:</p>
+  <ol>
+    <li>Увійдіть до вашої <b>Appwrite Console</b>.</li>
+    <li>У боковому меню перейдіть до розділу <b>Deploy</b> і виберіть <b>Sites</b>.</li>
+    <li>Натисніть <b>Create site</b>, підключіть ваш акаунт GitHub та оберіть репозиторій <code>kindle-butch-gen-x86</code>.</li>
+    <li>Заповніть базові параметри:
+      <ul>
+        <li><b>Site Name:</b> Kindle Butch Gen x86</li>
+        <li><b>Site ID:</b> <code>kindle-gen-x86</code></li>
+      </ul>
+    </li>
+    <li>Налаштуйте кроки збірки (<b>Build settings</b>):
+      <ul>
+        <li>Вкажіть команду збірки та вихідну директорію (<b>Output Directory</b>).</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h2 id="env">4. Крок 4. Налаштування змінних середовища (Environment Variables)</h2>
+  <p>Для коректної авторизації та роботи преміум-функцій у консолі Appwrite:</p>
+  <ol>
+    <li>Перейдіть до вкладки <b>Settings</b> вашого сайту в Appwrite Console та відкрийте секцію <b>Environment variables</b>.</li>
+    <li>Додайте обов'язкові змінні конфігурації:
+      <ul>
+        <li><code>KBG_WEB_PASSWORD</code> — надійний адміністративний пароль для доступу до веб-панелі.</li>
+        <li><code>KBG_APPWRITE_KEY</code> — ключ підключення до проєкту Appwrite (за потреби).</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h2 id="backend">5. Крок 5. Локальний запуск бекенду та CUDA-оточення (WSL2 / RTX 3050)</h2>
+  <p>Ресурсомісткі задачі (конвертація Marker, OCR манґи, LLM-переклад через llama.cpp та генерація аудіо) виконуються на ПК під прискоренням GPU:</p>
+  <ol>
+    <li>Відкрийте термінал <b>WSL2 (Ubuntu 24.04)</b>.</li>
+    <li>Запустіть скрипт автоматичного розгортання:
+      <pre>bash deploy.sh</pre>
+    </li>
+    <div class="tip">Скрипт автоматично налаштує збірку <code>llama.cpp</code> із прапорцем <code>-DGGML_CUDA=ON</code> та встановить десктопну CUDA-версію PyTorch (<code>--index-url https://download.pytorch.org/whl/cu121</code>), що повністю задіє відеокарту NVIDIA RTX 3050 для прискорення обчислень.</div>
+    <li>Переконайтеся, що локальний Flask-бекенд успішно стартував і слухає порт <code>5000</code>.</li>
+  </ol>
+
+  <h2 id="verify">6. Крок 6. Перевірка працездатності</h2>
+  <ol>
+    <li>Перевірте статус збірки в панелі <b>Appwrite Sites</b> (статус має змінитись на <code>ready</code>).</li>
+    <li>Перейдіть за згенерованим Appwrite доменом сайту або за адресою <code>http://localhost:5000</code>.</li>
+    <li>Авторизуйтесь за допомогою адміністративних даних. У налаштуваннях книг вам будуть доступні всі елементи керування преміум-режимом (ASR-верифікація наголосів Whisper INT8, MQM-оцінка якості, Агент-редактор Gemma 3 4B) із інтерактивними діалогами згоди на завантаження моделей.</li>
+  </ol>
+
+  <p style="margin-top:2rem"><a href="https://t.me/GetVydraBot">🤖 Питання — у бот @GetVydraBot</a> · <a href="index.html">← про проєкт</a> · <a href="install.html">📲 Android версія</a> · <a href="legal.html">Правові застереження</a></p>
+</body>
+</html>

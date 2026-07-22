@@ -51,7 +51,8 @@ def _tg_send(token, chat_id, text, keyboard=None):
 # will be integrated later; Track A is a real URL already (official fund).
 def _main_keyboard():
     return [
-        [{"text": "📲 Встановити Vydra", "callback_data": "install"}],
+        [{"text": "📲 Встановити Android (Termux)", "callback_data": "install"},
+         {"text": "💻 Встановити x86 (WSL2 / CUDA)", "callback_data": "install_x86"}],
         [{"text": "👥 Реферальний код", "callback_data": "referral"},
          {"text": "🔕 Вимкнути банер", "callback_data": "nobanner"}],
         [{"text": "⏸️ Призупинити сповіщення", "callback_data": "pause"},
@@ -233,7 +234,7 @@ def main(context):
         data = cb.get("data") or ""
         chat_id = ((cb.get("message") or {}).get("chat") or {}).get("id")
         tg_id = (cb.get("from") or {}).get("id")
-        text = {"install": "/install", "referral": "/referral",
+        text = {"install": "/install", "install_x86": "/install_x86", "referral": "/referral",
                 "nobanner": "/no_support_banner", "donate_dev": "/donate_dev",
                 "premium": "/premium", "pause": "/pause",
                 "resume": "/resume"}.get(data, "")
@@ -411,7 +412,7 @@ def main(context):
 
     if cmd == "/install":
         _tg_send(token, chat_id,
-                 "🦦 <b>Встановлення Vydra на ваш Android</b>\n\n"
+                 "🦦 <b>Встановлення Vydra на ваш Android (Termux)</b>\n\n"
                  "Потрібно: 64-бітний телефон, 6+ GB RAM, 15+ GB вільного місця, "
                  "~30 хв і Wi-Fi (завантажується модель 4.4GB).\n\n"
                  "<b>Крок 1.</b> Встановіть Termux З F-DROID (не з Play Market — "
@@ -432,8 +433,10 @@ def main(context):
                  "Скрипт сам перевірить, чи телефон відповідає вимогам "
                  "(діагностика на старті), і розгорне все: пакети, контейнер, "
                  "компіляцію перекладача, модель.\n\n"
-                 "📖 Детальна ілюстрована інструкція:\n"
+                 "📖 Детальна інструкція для Android:\n"
                  "https://vydra.appwrite.network/install.html\n\n"
+                 "💻 <b>Інструкція для десктопної версії x86 (WSL2 / CUDA):</b>\n"
+                 "/install_x86 або https://vydra.appwrite.network/install_x86.html\n\n"
                  "⚠️ <b>Тримайте екран увімкненим і Termux відкритим</b> до "
                  "напису «Deployment complete» — Android вбиває важкі фонові "
                  "процеси.\n\n"
@@ -442,6 +445,33 @@ def main(context):
                  "консолі). Питання — пишіть сюди.\n\n"
                  "📜 Правові застереження (авторське право, донати): "
                  "https://vydra.appwrite.network/legal.html")
+        return res.json({"ok": True})
+
+    if cmd == "/install_x86":
+        _tg_send(token, chat_id,
+                 "🚀 <b>Посібник з розгортання Kindle-Butch-Gen (x86 / Windows 11 / WSL2 / CUDA)</b>\n\n"
+                 "Розгортання десктопної версії <b>Kindle-Butch-Gen (x86)</b> для Windows 11 "
+                 "(через WSL2 та нативну підтримку NVIDIA CUDA) з використанням <b>Appwrite Sites</b>:\n\n"
+                 "<b>📋 Крок 1. Передумови та системні вимоги:</b>\n"
+                 "• ОС: Windows 11 + активований <b>WSL2</b> (Ubuntu 24.04 LTS).\n"
+                 "• GPU: Відеокарта NVIDIA (наприклад, <b>RTX 3050</b> або новіша) з актуальними драйверами CUDA.\n"
+                 "• Інструменти: Git та GitHub CLI (gh).\n\n"
+                 "<b>🛠️ Крок 2. Підготовка репозиторію:</b>\n"
+                 "<code>git clone https://github.com/maxfraieho/kindle-butch-gen-x86.git\n"
+                 "cd kindle-butch-gen-x86</code>\n\n"
+                 "<b>🌐 Крок 3. Деплой в Appwrite Sites:</b>\n"
+                 "1. Увійдіть до Appwrite Console → <b>Sites</b> → <b>Create site</b>.\n"
+                 "2. Підключіть GitHub та оберіть репозиторій <code>kindle-butch-gen-x86</code>.\n\n"
+                 "<b>⚙️ Крок 4. Змінні середовища:</b>\n"
+                 "• Додайте <code>KBG_WEB_PASSWORD</code> (адміністративний пароль).\n\n"
+                 "<b>💻 Крок 5. Локальний запуск бекенду та CUDA:</b>\n"
+                 "В терміналі WSL2 (Ubuntu 24.04) запустіть:\n"
+                 "<code>bash deploy.sh</code>\n"
+                 "<i>(Зкомпілює llama.cpp з -DGGML_CUDA=ON та встановить PyTorch з підтримкою CUDA --index-url https://download.pytorch.org/whl/cu121)</i>\n\n"
+                 "<b>✅ Крок 6. Перевірка працездатності:</b>\n"
+                 "Перевірте статус в Appwrite Sites (ready) та авторизуйтесь у веб-панелі на <code>http://localhost:5000</code>.\n\n"
+                 "📖 <b>Повний детальний мануал на сайті:</b>\n"
+                 "https://vydra.appwrite.network/install_x86.html")
         return res.json({"ok": True})
 
     if cmd == "/menu":
