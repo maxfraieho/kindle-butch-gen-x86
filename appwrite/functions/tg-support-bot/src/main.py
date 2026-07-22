@@ -434,24 +434,21 @@ def main(context):
     if cmd == "/install_x86":
         _tg_send(token, chat_id,
                  "💻 <b>Встановлення Vydra на ПК x86 (Windows 11 / WSL2 / NVIDIA CUDA)</b>\n\n"
-                 "Автоматичне автономне розгортання десктопної версії з прискоренням NVIDIA GPU (RTX 3050+).\n\n"
-                 "<b>📋 Системні вимоги:</b>\n"
-                 "• ПК з Windows 11 (WSL2 Ubuntu 22.04 / 24.04 LTS)\n"
-                 "• Дискретна відеокарта NVIDIA з актуальними драйверами CUDA\n"
-                 "• 8+ GB RAM, 15+ GB вільного місця на SSD\n\n"
-                 "<b>🚀 ЄДИНА КОМАНДА РОЗГОРТАННЯ:</b>\n"
-                 "Відкрийте термінал <b>WSL2 (Ubuntu)</b> та виконайте:\n\n"
-                 "<code>bash &lt;(curl -fsSL https://raw.githubusercontent.com/"
-                 "maxfraieho/kindle-butch-gen-x86/master/deploy.sh) -a</code>\n\n"
-                 "<b>🤖 Що зробить скрипт автоматично:</b>\n"
-                 "1. Перевірить наявність CUDA драйверів та GPU\n"
-                 "2. Встановіть системні залежності (Git, Python, CMake, FFmpeg, Calibre)\n"
+                 "Автоматичне розгортання з прискоренням NVIDIA GPU (RTX 3050+).\n\n"
+                 "<b>🪟 ВСТАНОВЛЕННЯ З WINDOWS POWERSHELL (ОДНА КОМАНДА):</b>\n\n"
+                 "Якщо WSL ще не встановлено (виконайте 1 раз в PowerShell від Адміністратора):\n"
+                 "<code>wsl --install</code>\n\n"
+                 "Запустіть розгортання Vydra безпосередньо з <b>Windows PowerShell</b>:\n\n"
+                 "<code>wsl bash -c \"curl -fsSL https://raw.githubusercontent.com/"
+                 "maxfraieho/kindle-butch-gen-x86/master/deploy.sh | bash -s -- -a\"</code>\n\n"
+                 "<b>🤖 Скрипт автоматично:</b>\n"
+                 "1. Виявить та задіє дискретну карту NVIDIA CUDA\n"
+                 "2. Встановіть необхідні пакети (Git, Python, CMake, FFmpeg, Calibre)\n"
                  "3. Зкомпілює <code>llama.cpp</code> з <b>-DGGML_CUDA=ON</b>\n"
-                 "4. Встановить PyTorch CUDA (cu121) та моделі ШІ (~4.4 GB)\n"
-                 "5. Запустить веб-панель на <code>http://localhost:5000</code>\n\n"
+                 "4. Завантажить мовні моделі ШІ та підніме веб-панель на <code>http://localhost:5000</code>\n\n"
                  "📖 <b>Повний посібник x86:</b>\n"
                  "https://vydra.appwrite.network/install_x86.html\n\n"
-                 "📱 Якщо потрібна мобільна версія для Android: /install")
+                 "📱 Якщо потрібна версія для Android (Termux): /install")
         return res.json({"ok": True})
 
     if cmd == "/menu":

@@ -47,9 +47,11 @@
     </div>
   </div>
 
-  <div class="tip">🚀 <b>Швидке автономне розгортання x86 (одна команда у WSL2 Ubuntu):</b><br>
-  <pre style="margin: 0.4rem 0 0;">bash &lt;(curl -fsSL https://raw.githubusercontent.com/maxfraieho/kindle-butch-gen-x86/master/deploy.sh) -a</pre>
-  Скрипт автоматично перевірить CUDA GPU, встановить пакети, зкомпілює <code>llama.cpp</code> з <code>-DGGML_CUDA=ON</code>, завантажить моделі та підніме веб-панель на <code>http://localhost:5000</code>.</div>
+  <div class="tip">🪟 <b>Розгортання в один клік безпосередньо з Windows PowerShell:</b><br>
+  Якщо підсистему WSL ще не встановлено, виконайте в PowerShell (від Адміністратора): <code>wsl --install</code><br>
+  Потім просто вставте та запустіть цю команду в <b>Windows PowerShell</b>:<br>
+  <pre style="margin: 0.4rem 0 0;">wsl bash -c "curl -fsSL https://raw.githubusercontent.com/maxfraieho/kindle-butch-gen-x86/master/deploy.sh | bash -s -- -a"</pre>
+  Скрипт автономно виявить CUDA GPU, встановить пакети, зкомпілює <code>llama.cpp</code> з <code>-DGGML_CUDA=ON</code>, завантажить моделі ШІ та підніме веб-панель на <code>http://localhost:5000</code>.</div>
 
   <nav class="toc">
     <a href="#req">1. Крок 1 — Передумови та системні вимоги</a>
