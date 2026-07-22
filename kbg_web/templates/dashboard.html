@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vydra 🦦 — Дашборд</title>
+    <link rel="icon" type="image/png" href="/static/vydra-sm.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display:flex; align-items:center; justify-content:center; gap:0.9rem; margin-bottom:0.4rem;">
+                <img src="/static/vydra-sm.png" alt="Vydra" class="brand-logo">
+                <h1 style="margin:0;">Vydra</h1>
+            </div>
+            <p style="margin-bottom: 1.5rem;">Книги, аудіокниги та манґа українською — локально, на вашому пристрої</p>
+            <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 0.5rem;">
+                <a href="/" class="btn btn-primary" style="text-decoration: none; padding: 0.5rem 1.25rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);">
+                    🖥️ Дашборд
+                </a>
+                <a href="/downloads" class="btn btn-secondary" style="text-decoration: none; padding: 0.5rem 1.25rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+                    📥 Архів завантажень
+                </a>
+                <a href="/manual" class="btn btn-secondary" style="text-decoration: none; padding: 0.5rem 1.25rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+                    📖 Посібник
+                </a>
+            </div>
+        </header>
+
+        <div class="dashboard-single-col">
+            <!-- Vydra support banner status (TASK-51) -->
+            <div class="glass-card" id="supportCard" style="display:none; padding: 0.9rem 1.2rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem;">
+                    <div>
+                        <span style="font-weight:600;">🦦 Примітки підтримки в книгах:</span>
+                        <span id="supportStatus" style="margin-left:0.3rem;">…</span>
+                        <div id="premiumStatus" style="display:none; font-size:0.88rem; margin-top:0.25rem; color:#f0b429;"></div>
+                        <div id="deviceStatus" style="display:none; font-size:0.85rem; margin-top:0.25rem; color:var(--text-secondary);"></div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <a id="supportBotBtn" href="https://t.me/GetVydraBot" target="_blank" class="btn btn-primary"
+                           style="text-decoration:none; padding:0.4rem 0.8rem; font-size:0.85rem; border-radius:8px;">
+                            🤖 Керувати в Telegram (донат / вимкнення)
+                        </a>
+                        <button id="supportLocalBtn" class="btn-outline"
+                                style="padding:0.4rem 0.8rem; font-size:0.85rem; border-radius:8px; cursor:pointer;"
+                                onclick="toggleLocalBanner()">…</button>
+                    </div>
+                </div>
+                <!-- TASK-71: fresh installs ship with an unlinked telegram_id
+                     by design (safe default) - prompt once until the user
+                     links their own account, otherwise premium/support
+                     status silently never activates with no visible error. -->
+                <div id="telegramLinkRow" style="display:none; margin-top:0.7rem; padding-top:0.7rem; border-top:1px solid rgba(255,255,255,0.08); flex-wrap:wrap; align-items:center; gap:0.5rem;">
+                    <span style="font-size:0.85rem; color:var(--text-secondary);">
+                        🔗 Цей пристрій ще не прив'язаний до вашого Telegram-акаунту - без цього розширені можливості й статус підтримки не працюватимуть.
+                        Напишіть <code>/start</code> боту, скопіюйте свій ID з відповіді і вставте нижче:
+                    </span>
+                    <input type="text" id="telegramLinkInput" placeholder="напр. 123456789"
+                           style="padding:0.4rem 0.6rem; font-size:0.85rem; border-radius:8px; width:150px;">
+                    <button class="btn btn-primary" style="padding:0.4rem 0.8rem; font-size:0.85rem; border-radius:8px;"
+                            onclick="linkTelegramId()">Прив'язати</button>
+                </div>
+            </div>
+
+            <!-- Manage Books -->
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+                    <h2 class="card-title" style="margin: 0; border-bottom: none; padding-bottom: 0; flex: 1; min-width: 150px;">Мої книги</h2>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                        <button class="btn btn-primary btn-add-book-header" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem; border-radius: 8px; cursor: pointer;" onclick="openAddBookModal()">
+                            <span>➕</span> Додати книгу
+                        </button>
+                        <div class="kebab-menu-container" style="position: relative;">
+                            <button onclick="toggleHeaderMenu(event)" class="btn-outline" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.35rem; border-radius: 8px; cursor: pointer;">
+                                <span>⚙️</span> Налаштування ▾
+                            </button>
+                            <div class="kebab-dropdown" id="headerSettingsDropdown" style="right: 0; left: auto; top: 110%; min-width: 200px;">
+                                <button onclick="openModelsSelector(); closeHeaderMenu();" class="dropdown-item">🤖 Моделі</button>
+                                <button onclick="openFolderSelector(); closeHeaderMenu();" class="dropdown-item">📁 Куди зберігати</button>
+                                <button onclick="openPasswordModal(); closeHeaderMenu();" class="dropdown-item">🔑 Пароль</button>
+                                <button onclick="openAppSettings(); closeHeaderMenu();" class="dropdown-item">⚙️ Загальні налаштування</button>
+                                <button id="selfUpdateBtn" onclick="runSelfUpdate()" class="dropdown-item">🔄 Оновити Vydra</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="save-location-info">
+                    <span>📁</span> <strong>Тека збереження:</strong> <span id="currentSaveLocation">Завантаження...</span>
+                </div>
+                <div id="booksList" class="books-container">
+                    <p style="color: var(--text-secondary); text-align: center;">Завантажую список книг...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Book Settings Modal (TASK-56) -->
+    <div id="bookSettingsModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3>⚙️ Налаштування книги</h3>
+                <button class="modal-close" onclick="closeBookSettings()">&times;</button>
+            </div>
+            <div class="modal-body" id="bookSettingsBody" style="font-size: 0.92rem;">
+                <p style="color: var(--text-secondary); text-align: center;">Завантаження...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeBookSettings()"
+                        style="background: var(--primary); border:none; color:#fff; padding:0.625rem 1.25rem; border-radius:8px; font-weight:500; cursor:pointer;">Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App-level Settings Modal (TASK-56) -->
+    <div id="appSettingsModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3>⚙️ Налаштування</h3>
+                <button class="modal-close" onclick="closeAppSettings()">&times;</button>
+            </div>
+            <div class="modal-body" id="appSettingsBody" style="font-size: 0.92rem;">
+                <p style="color: var(--text-secondary); text-align: center;">Завантаження...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeAppSettings()"
+                        style="background: var(--primary); border:none; color:#fff; padding:0.625rem 1.25rem; border-radius:8px; font-weight:500; cursor:pointer;">Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Folder Selector Modal -->
+    <div id="folderModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select Output Directory</h3>
+                <button class="modal-close" onclick="closeFolderSelector()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Choose where translated books and audio files should be saved.</p>
+                <div class="fs-parent-btn" id="fsParentBtn" onclick="navigateFsParent()" style="display: none;">
+                    <span>⬆</span> Up to parent folder
+                </div>
+                <div class="fs-list" id="fsList">
+                    <!-- Dynamic folder list -->
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.5rem;">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">Currently selected path (press Enter to browse):</label>
+                    <input type="text" class="fs-path-container" id="fsCurrentPath" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.15); box-sizing: border-box; outline: none; background: rgba(0,0,0,0.4);" value="/storage/emulated/0" onkeydown="if(event.key === 'Enter') loadDirectory(this.value)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" onclick="closeFolderSelector()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmFolderSelection()" id="fsSelectBtn" style="background: var(--primary); border: none; color: #fff; padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.2s;">✓ Select This Folder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal (TASK-61) -->
+    <div id="passwordModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔑 Зміна пароля</h3>
+                <button class="modal-close" onclick="closePasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="passwordStatus" class="upload-status"></div>
+                <div class="form-group">
+                    <label for="newPassword1">New password (min 6 characters)</label>
+                    <input type="password" id="newPassword1" class="form-control" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword2">Confirm new password</label>
+                    <input type="password" id="newPassword2" class="form-control" autocomplete="new-password"
+                           onkeydown="if(event.key === 'Enter') submitPasswordChange()">
+                </div>
+                <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary);">
+                    Login name stays the same. Takes effect immediately - no restart needed.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" onclick="closePasswordModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitPasswordChange()" style="background: var(--primary); border: none; color: #fff; padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 500; cursor: pointer;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extended Capabilities Onboarding Modal (TASK-65) -->
+    <div id="premiumOnboardModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 560px;">
+            <div class="modal-header">
+                <h3>💎 Розширені можливості активовано — налаштуймо все за хвилину</h3>
+                <button class="modal-close" onclick="closePremiumOnboarding(false)">&times;</button>
+            </div>
+            <div class="modal-body" style="font-size: 0.92rem;">
+                <p style="margin-top:0;">Дякуємо за підтримку Vydra 💙💛 Ось що тепер доступно і що варто зробити:</p>
+
+                <div style="border:1px solid var(--border-color); border-radius:10px; padding:0.8rem; margin-bottom:0.8rem;">
+                    <b>1️⃣ Vision-модель для агент-редактора</b>
+                    <div id="premModelStatus" style="margin:0.4rem 0; color: var(--text-secondary);">Перевірка...</div>
+                    <label id="premTermsWrap" style="display:flex; gap:0.5rem; align-items:flex-start; font-size:0.82rem; color:var(--text-secondary); margin:0.5rem 0;">
+                        <input type="checkbox" id="premGemmaTerms" style="width:auto; margin-top:0.2rem;" onchange="document.getElementById('premDownloadBtn').disabled = !this.checked;">
+                        <span>Модель працює на Google Gemma. Приймаю
+                            <a href="https://ai.google.dev/gemma/terms" target="_blank">Gemma Terms of Use</a> та
+                            <a href="https://ai.google.dev/gemma/prohibited_use_policy" target="_blank">Prohibited Use Policy</a>
+                            (заборона незаконного/шкідливого контенту).</span>
+                    </label>
+                    <button id="premDownloadBtn" class="btn btn-primary" onclick="startPremiumModelDownload()" disabled
+                            style="background: var(--primary); border:none; color:#fff; padding:0.5rem 1rem; border-radius:8px; cursor:pointer;">
+                        ⬇️ Завантажити модель (~3.5 ГБ)
+                    </button>
+                </div>
+
+                <div style="border:1px solid var(--border-color); border-radius:10px; padding:0.8rem; margin-bottom:0.8rem;">
+                    <b>2️⃣ ⚠️ Охолодження телефона</b>
+                    <div style="margin-top:0.4rem; color: var(--text-secondary);">
+                        Vision-аналіз сильно навантажує процесор. Радимо активне охолодження
+                        (магнітний кулер) під час роботи агента і перекладу — без нього Android
+                        може зупиняти важкі задачі, а телефон троттлитиме.
+                    </div>
+                </div>
+
+                <div style="border:1px solid var(--border-color); border-radius:10px; padding:0.8rem;">
+                    <b>3️⃣ Як цим користуватися</b>
+                    <div style="margin-top:0.4rem; color: var(--text-secondary);">
+                        🧬 <b>Cast Registry</b> — вкладка "Cast &amp; Context" у переглядачі книги: скануйте персонажів, підтвердіть рід — переклад відмінюватиме правильно.<br>
+                        🎙️ <b>ASR-верифікація (Whisper)</b> — виявлення й автоматичний контроль наголосів для аудіокниг.<br>
+                        🧠 <b>MQM-оцінка якості</b> — аналіз точності та смислової відповідності перекладених абзаців.<br>
+                        🤖 <b>Агент-редактор</b> — на проблемних сторінках агент пропонує виправлення з вашим підтвердженням.<br>
+                        <a href="/manual#support" style="color: var(--primary);">📖 Докладна інструкція в Посібнику →</a>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" onclick="closePremiumOnboarding(false)">Нагадати пізніше</button>
+                <button class="btn btn-primary" onclick="closePremiumOnboarding(true)"
+                        style="background: var(--primary); border:none; color:#fff; padding:0.625rem 1.25rem; border-radius:8px; font-weight:500; cursor:pointer;">Готово, все ясно</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Models Manager Modal -->
+    <div id="modelsModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3>🤖 Моделі та сервер перекладу</h3>
+                <button class="modal-close" onclick="closeModelsSelector()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Server Status Section -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                    <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🖥️</span> Llama Server Status (Port 8081)
+                    </h4>
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <span id="modelsServerDot" class="status-dot" style="width: 12px; height: 12px; border-radius: 50%; display: inline-block;"></span>
+                            <div>
+                                <div id="modelsServerStatus" style="font-weight: 600; font-size: 0.95rem;">Checking...</div>
+                                <div id="modelsServerLoaded" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.1rem;">No model loaded</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="modelsStartBtn" class="btn btn-success" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--success); border: none; cursor: pointer; border-radius: 6px;" onclick="startTranslationServer()">Start Server</button>
+                            <button id="modelsStopBtn" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--danger); border: none; cursor: pointer; border-radius: 6px;" onclick="stopTranslationServer()">Stop Server</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Models Configuration -->
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="modelsTranslationSelect" style="font-weight: 600; color: #fff; margin-bottom: 0.5rem; display: block;">Translation Model (.gguf)</label>
+                        <select id="modelsTranslationSelect" class="form-control" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 0.5rem; border-radius: 6px;">
+                            <!-- Populated dynamically -->
+                        </select>
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0.35rem 0 0 0;">Used during PDF/EPUB text translation step.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="margin-top: 1.5rem;">
+                <button class="btn-outline" onclick="closeModelsSelector()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveModelsConfiguration()" id="modelsSaveBtn" style="background: var(--primary); border: none; color: #fff; font-weight: 500; cursor: pointer;">Save Configuration</button>
+            </div>
+        </div>
+    </div>
+    <!-- Add Book Modal -->
+    <div id="addBookModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>➕ Нова книга</h3>
+                <button class="modal-close" onclick="closeAddBookModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="uploadStatus" class="upload-status"></div>
+                <form id="addBookForm">
+                    <div class="form-group">
+                        <label for="file_upload" id="fileUploadLabel">Завантажте файл (PDF / EPUB / TXT / MD)</label>
+                        <input type="file" id="file_upload" class="form-control" accept=".pdf,.epub,.txt,.md">
+                    </div>
+                    <div class="form-group">
+                        <label for="pdf_path" id="pdfPathLabel">…або вкажіть шлях до файлу на пристрої</label>
+                        <input type="text" id="pdf_path" class="form-control" placeholder="e.g. /path/to/book.pdf" autocomplete="off">
+                    </div>
+                    <input type="hidden" id="slug" required pattern="^[a-z0-9_-]+$">
+                    <div class="form-group">
+                        <label for="title">Назва книги</label>
+                        <input type="text" id="title" class="form-control" placeholder="e.g. Clean Code" required autocomplete="off" oninput="document.getElementById('slug').value = slugify(this.value)">
+                    </div>
+                    <details style="margin-bottom:1rem;">
+                    <summary style="cursor:pointer; color:var(--text-secondary); font-size:0.9rem; margin-bottom:0.6rem;">Детальніше (не обов'язково)</summary>
+                    <div class="form-group">
+                        <label for="authors">Автор(и)</label>
+                        <input type="text" id="authors" class="form-control" placeholder="можна лишити порожнім" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="source_lang">Мова оригіналу</label>
+                        <select id="source_lang" class="form-control" required>
+                            <option value="auto">Auto-detect (EPUB only)</option>
+                            <option value="en">English (en)</option>
+                            <option value="ru">Russian (ru)</option>
+                            <option value="uk">Ukrainian (uk)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lang">Мова перекладу (озвучення та книга)</label>
+                        <select id="lang" class="form-control" required>
+                            <option value="uk">Ukrainian (uk)</option>
+                            <option value="ru">Russian (ru)</option>
+                            <option value="en">English (en)</option>
+                        </select>
+                    </div>
+                    </details>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; margin-bottom: 1.5rem;">
+                        <input type="checkbox" id="is_manga" style="width: auto; margin: 0; cursor: pointer;" onchange="updateSourcePathPlaceholder(this.checked)">
+                        <label for="is_manga" style="margin: 0; cursor: pointer; font-weight: bold; color: var(--text-primary);">Це манґа / комікс (зображення)</label>
+                    </div>
+                    <button type="submit" id="addBookSubmit" class="btn btn-primary" style="width: 100%;">➕ Додати книгу</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" id="openAddBookBtn" onclick="openAddBookModal()" title="Додати книгу">➕</button>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# Python bytecodes
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Binary ONNX voice models
+models/
+
+# Generated audiobook/ebook output directories
+books/*/audio/
+books/*/output/
+books/*/cache/
+books/*/translated/
+books/*/batches/
+
+# PDF source books
+books/*/source.pdf
+books/*/*.pdf
+
+# Audio artifacts
+*.wav
+*.mp3
+
+# Log files
+*.log
+progress_translate*.json
+wget-log
+wget-log.*
+
+# Web Credentials & Scratch Workspace
+web_credentials.json
+scratch/
+books/
+screenshots/

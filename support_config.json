@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "interval_min_pages": 50,
+  "interval_max_pages": 70,
+  "track_a_name": "Повернись живим",
+  "track_a_url": "https://savelife.in.ua/donate/",
+  "track_b_url": "",
+  "appwrite": {
+    "endpoint": "https://fra.cloud.appwrite.io/v1",
+    "project": "6a23420a003a04b4997b",
+    "database": "kbg-support",
+    "collection": "users",
+    "telegram_id": ""
+  },
+  "_comment": "Track A = ЗАГАЛЬНА сторінка офіційного фонду (не конкретна кампанія). track_b_url порожній = Track B не показується; заповнити посиланням на банку/BMC розробника. enabled:false або відсутність файлу = жодних вставок.",
+  "_comment_telegram_id": "НІКОЛИ не комітити сюди реальний telegram_id - цей файл клонується КОЖНИМ новим deploy.sh встановленням як є. Порожній рядок = безпечний дефолт (fail-closed у common/support_profile.py). Прив'язка відбувається локально через /api/support/link-telegram після встановлення (TASK-71).",
+  "premium_features": [
+    "cast_registry"
+  ]
+}

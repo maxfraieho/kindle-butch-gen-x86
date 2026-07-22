@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vydra 🦦 — Quality Visualizer</title>
+    <link rel="icon" type="image/png" href="/static/vydra-sm.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/stages.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1 id="book-title">Loading book...</h1>
+                <div class="subtitle" id="book-slug">Slug: ...</div>
+            </div>
+            <a href="/" class="btn-back">← Назад до панелі</a>
+        </header>
+
+        <div id="live-edit-banner" style="display:none; margin-bottom:1rem; padding:0.75rem 1rem; border-radius:8px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; font-size:0.9rem;"></div>
+
+        <div id="viewer-container" class="visualizer-card">
+            <div class="loader" id="loader">
+                <div style="text-align: center;">
+                    <div class="loader-spinner" style="margin: 0 auto 1rem auto;"></div>
+                    <div>Loading visualizer dataset...</div>
+                </div>
+            </div>
+            <div id="content-area" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>const slug = "{{ slug }}";</script>
+    <script src="{{ url_for('static', filename='js/stages.js') }}" defer></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "output_root": "/storage/emulated/0/Documents/Books",
+  "translation_model": "/data/data/com.termux/files/home/models/hy-mt2/Hy-MT2-7B-Q4_K_M.gguf",
+  "editor_model": "/data/data/com.termux/files/home/models/qwen25-coder-7b/qwen2.5-coder-7b-instruct-q4_0.gguf",
+  "autostart_llama": false
+}

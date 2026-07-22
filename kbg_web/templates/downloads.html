@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vydra 🦦 — Архів завантажень</title>
+    <link rel="icon" type="image/png" href="/static/vydra-sm.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #09090b;
+            --surface-card: rgba(15, 15, 25, 0.6);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(139, 92, 246, 0.25);
+            
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            
+            --ease-out-snappy: cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #09090b);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .btn {
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 160ms var(--ease-out-snappy);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border-color: var(--border-subtle);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .glass-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 1.75rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            margin-bottom: 2rem;
+            transition: border-color 200ms var(--ease-out-snappy);
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .glass-card:hover {
+                border-color: var(--border-strong);
+            }
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 0 0 1.25rem 0;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-bar {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            color: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            outline: none;
+            transition: border-color 160ms var(--ease-out-snappy);
+        }
+        .search-bar:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+        }
+
+        .files-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .files-table th {
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-weight: 600;
+        }
+
+        .files-table td {
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: middle;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #fff;
+            word-break: break-all;
+            margin-bottom: 0.3rem;
+        }
+
+        .file-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-azw3 { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .badge-cbz { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .badge-epub { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+        .badge-mp3 { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .badge-md { background: rgba(113, 113, 122, 0.15); color: #cbd5e1; }
+
+        .file-size {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .files-table thead {
+                display: none;
+            }
+            .files-table tr {
+                display: block;
+                border-bottom: 1px solid rgba(255,255,255,0.06);
+                padding: 1rem 0;
+            }
+            .files-table td {
+                display: block;
+                padding: 0.5rem 0;
+                border-bottom: none;
+            }
+            .btn-download {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦦 Vydra</h1>
+            <p style="margin-bottom: 1.5rem;">EPUB / AZW3 Translation and Audio Synthesis System</p>
+            <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 0.5rem;">
+                <a href="/" class="btn btn-secondary" style="text-decoration: none; padding: 0.5rem 1.25rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+                    🖥️ Дашборд
+                </a>
+                <a href="/downloads" class="btn btn-primary" style="text-decoration: none; padding: 0.5rem 1.25rem; font-size: 0.9rem; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);">
+                    📥 Архів завантажень
+                </a>
+            </div>
+        </header>
+
+        <input type="text" id="searchBar" class="search-bar" placeholder="🔍 Пошук файлів за назвою книги, форматом чи описом..." oninput="filterFiles()">
+
+        <div id="downloadsContainer">
+            <div class="glass-card" style="text-align:center; padding:3rem;">
+                <p>Завантаження списку файлів...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Intercept fetch to prevent credential errors
+        (function() {
+            const originalFetch = window.fetch;
+            window.fetch = function(input, init) {
+                if (typeof input === 'string' && input.startsWith('/')) {
+                    input = window.location.origin + input;
+                }
+                return originalFetch(input, init);
+            };
+        })();
+
+        let allFiles = [];
+
+        async function loadDownloads() {
+            try {
+                const res = await fetch("/api/downloads");
+                allFiles = await res.json();
+                renderFiles(allFiles);
+            } catch (err) {
+                console.error(err);
+                document.getElementById("downloadsContainer").innerHTML = `
+                    <div class="glass-card" style="text-align:center; padding:3rem; color:var(--danger);">
+                        Помилка завантаження списку файлів. Спробуйте оновити сторінку.
+                    </div>
+                `;
+            }
+        }
+
+        async function deleteFile(slug, filename) {
+            if (!confirm(`Видалити файл "${filename}" назавжди?`)) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/delete-file/${slug}/${encodeURIComponent(filename)}`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    loadDownloads();
+                } else {
+                    alert('Помилка видалення: ' + data.message);
+                }
+            } catch (err) {
+                alert('Запит не вдався: ' + err.message);
+            }
+        }
+
+        function getFormatBadgeClass(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            return `badge badge-${ext}`;
+        }
+
+        function getFormatBadgeName(filename) {
+            return filename.split('.').pop().toUpperCase();
+        }
+
+        function renderFiles(filesList) {
+            const container = document.getElementById("downloadsContainer");
+            if (filesList.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-card empty-state">
+                        <span style="font-size: 3rem;">📦</span>
+                        <h3>Жодного файлу не знайдено</h3>
+                        <p>Скомпілюйте книги або мангу на головній сторінці, щоб вони з'явилися тут.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group files by book title
+            const groups = {};
+            filesList.forEach(file => {
+                if (!groups[file.book_title]) {
+                    groups[file.book_title] = [];
+                }
+                groups[file.book_title].push(file);
+            });
+
+            let html = '';
+            for (const [bookTitle, files] of Object.entries(groups)) {
+                html += `
+                    <div class="glass-card" style="animation: fadeInUp 300ms cubic-bezier(0.23, 1, 0.32, 1) forwards;">
+                        <h2 class="card-title">📖 ${bookTitle}</h2>
+                        <table class="files-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%;">Файл та Опис</th>
+                                    <th style="width: 15%;">Формат</th>
+                                    <th style="width: 15%;">Розмір</th>
+                                    <th style="width: 20%; text-align: right;">Завантаження</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${files.map(file => `
+                                    <tr>
+                                        <td>
+                                            <div class="file-name">${file.filename}</div>
+                                            <div class="file-desc">${file.description}</div>
+                                            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.25rem;">
+                                                🎯 Цільові пристрої: <strong>${file.target}</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="${getFormatBadgeClass(file.filename)}">${getFormatBadgeName(file.filename)}</span>
+                                        </td>
+                                        <td>
+                                            <span class="file-size">${file.size}</span>
+                                        </td>
+                                        <td style="text-align: right;">
+                                            <a href="${file.download_url}" class="btn btn-primary btn-download" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" target="_blank">
+                                                📥 Скачати
+                                            </a>
+                                            <button onclick="deleteFile('${file.slug}', '${file.filename.replace(/'/g, "\\'")}')" class="btn btn-download" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); margin-top: 0.4rem;" title="Видалити файл">
+                                                🗑️
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function filterFiles() {
+            const query = document.getElementById("searchBar").value.toLowerCase().trim();
+            if (!query) {
+                renderFiles(allFiles);
+                return;
+            }
+            const filtered = allFiles.filter(file => {
+                return file.filename.toLowerCase().includes(query) ||
+                       file.book_title.toLowerCase().includes(query) ||
+                       file.description.toLowerCase().includes(query) ||
+                       file.target.toLowerCase().includes(query) ||
+                       file.filename.split('.').pop().toLowerCase().includes(query);
+            });
+            renderFiles(filtered);
+        }
+
+        // Run on load
+        loadDownloads();
+    </script>
+</body>
+</html>
