@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/usr/bin/env bash
 # Premium AI-model downloader for kindle-butch-gen:
 # - Gemma 3 4B (~2.5GB) + mmproj (~850MB) for Agent-Editor / Cast Registry
 # - Whisper Small INT8 (~245MB) for ASR accent verification loop

@@ -2251,22 +2251,4 @@ def main():
         shutil.rmtree(temp_out, ignore_errors=True)
 
 if __name__ == "__main__":
-    # TASK-28 follow-up: full-book runs (and 194-page backfills) can run
-    # long enough that Android kills this backgrounded process outright
-    # when the screen locks without a wake-lock held - audio_stage.py
-    # already does this for its long TTS runs, translate_manga.py never
-    # did. Confirmed termux-wake-lock is reachable from inside this PRoot
-    # Ubuntu container (proot bind-mounts expose it). Wrapping the whole
-    # entrypoint rather than just the per-book loop, since --backfill-
-    # bubbles-meta and --regenerate-page can also run long enough to matter.
-    try:
-        subprocess.run(["termux-wake-lock"], check=False)
-    except Exception as e:
-        log(f"Warning: termux-wake-lock failed: {e}")
-    try:
-        main()
-    finally:
-        try:
-            subprocess.run(["termux-wake-unlock"], check=False)
-        except Exception as e:
-            log(f"Warning: termux-wake-unlock failed: {e}")
+    main()

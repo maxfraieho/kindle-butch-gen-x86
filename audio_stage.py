@@ -33,20 +33,11 @@ def generate_silence_wav(output_path, duration_ms, sample_rate):
 def apply_fade_out(input_wav, output_wav, fade_ms=15):
     """Applies a fade-out to the end of a WAV file via ffmpeg."""
     fade_sec = fade_ms / 1000.0
-    import shutil
-    if shutil.which("proot-distro"):
-        cmd = [
-            "proot-distro", "login", "ubuntu", "--",
-            "ffmpeg", "-y", "-i", os.path.abspath(input_wav),
-            "-af", f"areverse,afade=t=in:d={fade_sec},areverse",
-            os.path.abspath(output_wav)
-        ]
-    else:
-        cmd = [
-            "ffmpeg", "-y", "-i", input_wav,
-            "-af", f"areverse,afade=t=in:d={fade_sec},areverse",
-            output_wav
-        ]
+    cmd = [
+        "ffmpeg", "-y", "-i", os.path.abspath(input_wav),
+        "-af", f"areverse,afade=t=in:d={fade_sec},areverse",
+        os.path.abspath(output_wav)
+    ]
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def log(message):
@@ -350,13 +341,6 @@ def main():
 
     # Synthesize missing chunks if any
     if unique_missing_chunks:
-        # Acquire termux-wake-lock
-        try:
-            log("Acquiring termux-wake-lock...")
-            subprocess.run(["termux-wake-lock"], check=False)
-        except Exception as e:
-            log(f"Warning: termux-wake-lock failed: {e}")
-
         try:
             # Preprocess chunks: run stressify_batch.py inside PRoot container if target language is Ukrainian
             if target_lang == "uk":
@@ -391,7 +375,6 @@ def main():
                                 "lang": target_lang
                             }, f, ensure_ascii=False, indent=2)
                         cmd_stress = [
-                            "proot-distro", "login", "ubuntu", "--",
                             "python3", os.path.join(repo_dir, "bin", "stressify_batch.py")
                         ]
                         subprocess.run(cmd_stress, stdin=subprocess.DEVNULL, check=True)
@@ -475,12 +458,7 @@ def main():
             log(f"Error calling tts_helper.py: {e}")
             sys.exit(1)
         finally:
-            # Release termux-wake-unlock
-            try:
-                log("Releasing termux-wake-unlock...")
-                subprocess.run(["termux-wake-unlock"], check=False)
-            except Exception as e:
-                log(f"Warning: termux-wake-unlock failed: {e}")
+            pass
 
         # NOTE (TASK-23): tts_helper.py itself writes cache_path
         # incrementally after each chunk (both engines) - it's the
@@ -608,7 +586,6 @@ def main():
     log(f"Concatenating chunks and encoding to: {output_mp3}")
 
     cmd_ffmpeg = [
-        "proot-distro", "login", "ubuntu", "--",
         "ffmpeg", "-y", "-f", "concat", "-safe", "0",
         "-i", os.path.abspath(ffmpeg_list_path),
         "-af", "afftdn,highpass=f=80,lowpass=f=8000,speechnorm",

@@ -51,7 +51,6 @@ def run_marker_batch(start, end, pdf_path, batches_dir, log_path):
     os.makedirs(batch_out_dir, exist_ok=True)
     
     cmd = [
-        "proot-distro", "login", "ubuntu", "--",
         "env",
         "OMP_NUM_THREADS=4",
         "MKL_NUM_THREADS=4",
@@ -341,7 +340,6 @@ def main():
         # EPUB conversion
         log(f"Converting merged markdown to EPUB: {epub_out_path}...", log_path)
         cmd_epub = [
-            "proot-distro", "login", "ubuntu", "--",
             "env",
             f"LANG={lang_locale}",
             f"LC_ALL={lang_locale}",
@@ -378,7 +376,6 @@ def main():
         # AZW3 conversion
         log(f"Converting merged markdown to AZW3: {azw3_out_path}...", log_path)
         cmd_azw = [
-            "proot-distro", "login", "ubuntu", "--",
             "env",
             f"LANG={lang_locale}",
             f"LC_ALL={lang_locale}",

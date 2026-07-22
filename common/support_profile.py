@@ -22,7 +22,7 @@ _TIMEOUT_S = 3
 _SAFE_DEFAULTS = {"banner_disabled": False, "priority_tier": 0}
 
 
-_TERMUX_HOME = os.environ.get("TERMUX_HOME", "/data/data/com.termux/files/home")
+_TERMUX_HOME = os.environ.get("KBG_HOME_DIR", os.path.expanduser("~"))
 
 
 def _read_key():

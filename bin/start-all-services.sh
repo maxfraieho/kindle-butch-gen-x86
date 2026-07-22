@@ -35,7 +35,6 @@ fi
 # 3. Autostart Flask Web Server (on port 5000)
 if ! pgrep -f "python3 kbg_web/app.py" >/dev/null; then
     echo "Autostart: Starting Flask web server on port 5000..."
-    termux-wake-lock 2>/dev/null || true
     (cd "$KBG_HOME" && nohup python3 kbg_web/app.py --port 5000 > "$HOME/kbg-flask.log" 2>&1 &)
 fi
 

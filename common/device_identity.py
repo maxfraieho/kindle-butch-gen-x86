@@ -22,7 +22,7 @@ import os
 import subprocess
 import uuid
 
-_TERMUX_HOME = os.environ.get("TERMUX_HOME", "/data/data/com.termux/files/home")
+_TERMUX_HOME = os.environ.get("KBG_HOME_DIR", os.path.expanduser("~"))
 _HOME = _TERMUX_HOME if os.path.isdir(_TERMUX_HOME) else os.path.expanduser("~")
 DEVICE_ID_FILE = os.path.join(_HOME, ".vydra_device_id")
 
