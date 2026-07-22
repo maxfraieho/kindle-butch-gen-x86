@@ -50,7 +50,7 @@
   <div class="tip">🪟 <b>Розгортання в один клік безпосередньо з Windows PowerShell:</b><br>
   Якщо підсистему WSL ще не встановлено, виконайте в PowerShell (від Адміністратора): <code>wsl --install</code><br>
   Потім просто вставте та запустіть цю команду в <b>Windows PowerShell</b>:<br>
-  <pre style="margin: 0.4rem 0 0;">wsl bash -c "curl -fsSL https://raw.githubusercontent.com/maxfraieho/kindle-butch-gen-x86/master/deploy.sh | bash -s -- -a"</pre>
+  <pre style="margin: 0.4rem 0 0;">wsl bash -c "sudo apt update && sudo apt install -y curl && curl -fsSL https://raw.githubusercontent.com/maxfraieho/kindle-butch-gen-x86/master/deploy.sh | bash -s -- -a"</pre>
   Скрипт автономно виявить CUDA GPU, встановить пакети, зкомпілює <code>llama.cpp</code> з <code>-DGGML_CUDA=ON</code>, завантажить моделі ШІ та підніме веб-панель на <code>http://localhost:5000</code>.</div>
 
   <nav class="toc">

@@ -54,7 +54,7 @@ echo -e "${BLUE}🚀 Kindle-Butch-Gen (x86 / WSL2 / NVIDIA CUDA) Повніст�
 echo -e "${BLUE}=====================================================================${NC}"
 
 # -------------------------------------------------------------
-# STEP 0: Auto-install essential bootstrap tools (git, curl)
+# STEP 0: Auto-fix WSL configuration issues & Install bootstrap tools
 # -------------------------------------------------------------
 SUDO_CMD=""
 if [ "$(id -u)" -ne 0 ]; then
@@ -63,11 +63,22 @@ if [ "$(id -u)" -ne 0 ]; then
     fi
 fi
 
+# Detect WSL environment and check/fix common .wslconfig errors (e.g. unknown key 'wsl2.systemd')
+if [ -d "/mnt/c/Users" ] || grep -qi microsoft /proc/version 2>/dev/null; then
+    for wslcfg in /mnt/c/Users/*/.wslconfig; do
+        if [ -f "$wslcfg" ] && grep -q "wsl2\.systemd" "$wslcfg" 2>/dev/null; then
+            log "Виявлено некоректний ключ 'wsl2.systemd' у $wslcfg — виправляю на 'systemd'..."
+            sed -i 's/wsl2\.systemd/systemd/g' "$wslcfg" 2>/dev/null || true
+            success "Конфігурацію .wslconfig виправлено автоматично."
+        fi
+    done
+fi
+
 if ! command -v git >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
     log "Встановлення первинних утиліт (git, curl)..."
     if command -v apt-get >/dev/null 2>&1; then
-        $SUDO_CMD apt-get update -y >/dev/null 2>&1 || true
-        $SUDO_CMD apt-get install -y git curl >/dev/null 2>&1 || true
+        DEBIAN_FRONTEND=noninteractive $SUDO_CMD apt-get update -y >/dev/null 2>&1 || true
+        DEBIAN_FRONTEND=noninteractive $SUDO_CMD apt-get install -y git curl >/dev/null 2>&1 || true
     elif command -v dnf >/dev/null 2>&1; then
         $SUDO_CMD dnf install -y git curl >/dev/null 2>&1 || true
     fi

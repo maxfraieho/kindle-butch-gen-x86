@@ -452,7 +452,7 @@ def main(context):
                  "<i>(Якщо Windows попросить перезавантажити комп'ютер — виконайте перезавантаження)</i>.\n\n"
                  "<b>📌 КРОК 3. Встановлення Vydra в один клік:</b>\n"
                  "Скопіюйте та вставте у PowerShell цю команду (клацніть правою кнопкою миші у вікні терміналу) і натисніть <b>Enter</b>:\n\n"
-                 "<code>wsl bash -c \"curl -fsSL https://raw.githubusercontent.com/"
+                 "<code>wsl bash -c \"sudo apt update && sudo apt install -y curl && curl -fsSL https://raw.githubusercontent.com/"
                  "maxfraieho/kindle-butch-gen-x86/master/deploy.sh | bash -s -- -a\"</code>\n\n"
                  "🤖 Скрипт автономно встановить усі компоненти, налаштує відеокарту NVIDIA та відкриє веб-панель на <code>http://localhost:5000</code>.\n\n"
                  "📖 <b>Докладний посібник на сайті:</b> https://vydra.appwrite.network/install_x86.html\n"
