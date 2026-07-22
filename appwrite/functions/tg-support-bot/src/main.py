@@ -433,22 +433,24 @@ def main(context):
 
     if cmd == "/install_x86":
         _tg_send(token, chat_id,
-                 "💻 <b>Встановлення Vydra на ПК x86 (Windows 11 / WSL2 / NVIDIA CUDA)</b>\n\n"
-                 "Автоматичне розгортання з прискоренням NVIDIA GPU (RTX 3050+).\n\n"
-                 "<b>🪟 ВСТАНОВЛЕННЯ З WINDOWS POWERSHELL (ОДНА КОМАНДА):</b>\n\n"
-                 "Якщо WSL ще не встановлено (виконайте 1 раз в PowerShell від Адміністратора):\n"
-                 "<code>wsl --install</code>\n\n"
-                 "Запустіть розгортання Vydra безпосередньо з <b>Windows PowerShell</b>:\n\n"
+                 "💻 <b>Встановлення Vydra на комп'ютер (Windows 11 з відеокартою NVIDIA)</b>\n\n"
+                 "<b>❓ Що таке PowerShell?</b>\n"
+                 "Це стандартна системна програма-термінал для команд, яка вже вбудована в кожен Windows.\n\n"
+                 "<b>📌 КРОК 1. Як відкрити PowerShell:</b>\n"
+                 "1. Натисніть на клавіатурі комбінацію клавіш <b>Win + X</b> (клавіша з логотипом 🪟 Windows + буква X).\n"
+                 "2. У меню, що з'явиться біля кнопки Пуск, виберіть <b>«Термінал (Адміністратор)»</b> або <b>«PowerShell (Адміністратор)»</b>.\n"
+                 "<i>(Альтернатива: натисніть клавішу Win 🪟, введіть слово <b>powershell</b> і натисніть Enter)</i>.\n\n"
+                 "<b>📌 КРОК 2. Активація підсистеми Linux (лише 1 раз):</b>\n"
+                 "Скопіюйте команду нижче, вставте її у вікно PowerShell і натисніть <b>Enter</b>:\n"
+                 "<code>wsl --install</code>\n"
+                 "<i>(Якщо Windows попросить перезавантажити комп'ютер — виконайте перезавантаження)</i>.\n\n"
+                 "<b>📌 КРОК 3. Встановлення Vydra в один клік:</b>\n"
+                 "Скопіюйте та вставте у PowerShell цю команду (клацніть правою кнопкою миші у вікні терміналу) і натисніть <b>Enter</b>:\n\n"
                  "<code>wsl bash -c \"curl -fsSL https://raw.githubusercontent.com/"
                  "maxfraieho/kindle-butch-gen-x86/master/deploy.sh | bash -s -- -a\"</code>\n\n"
-                 "<b>🤖 Скрипт автоматично:</b>\n"
-                 "1. Виявить та задіє дискретну карту NVIDIA CUDA\n"
-                 "2. Встановіть необхідні пакети (Git, Python, CMake, FFmpeg, Calibre)\n"
-                 "3. Зкомпілює <code>llama.cpp</code> з <b>-DGGML_CUDA=ON</b>\n"
-                 "4. Завантажить мовні моделі ШІ та підніме веб-панель на <code>http://localhost:5000</code>\n\n"
-                 "📖 <b>Повний посібник x86:</b>\n"
-                 "https://vydra.appwrite.network/install_x86.html\n\n"
-                 "📱 Якщо потрібна версія для Android (Termux): /install")
+                 "🤖 Скрипт автономно встановить усі компоненти, налаштує відеокарту NVIDIA та відкриє веб-панель на <code>http://localhost:5000</code>.\n\n"
+                 "📖 <b>Докладний посібник на сайті:</b> https://vydra.appwrite.network/install_x86.html\n"
+                 "📱 Інструкція для Android: /install")
         return res.json({"ok": True})
 
     if cmd == "/menu":
