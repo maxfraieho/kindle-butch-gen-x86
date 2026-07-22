@@ -412,23 +412,29 @@ def main(context):
 
     if cmd == "/install":
         _tg_send(token, chat_id,
-                 "📱 <b>Встановлення Vydra на Android (Termux)</b>\n\n"
-                 "Автономне розгортання мобільної версії безпосередньо на вашому смартфоні.\n\n"
-                 "<b>📋 Системні вимоги:</b>\n"
-                 "• 64-бітний Android (aarch64), 6+ GB RAM, 15+ GB вільного місця\n\n"
-                 "<b>Крок 1.</b> Встановіть <b>Termux з F-DROID</b> (не з Play Market):\n"
-                 "https://f-droid.org/packages/com.termux/\n\n"
-                 "<b>Крок 2.</b> ⚠️ Вимкніть оптимізацію батареї для Termux:\n"
-                 "Налаштування → Застосунки → Termux → Батарея → <b>Без обмежень</b>\n\n"
-                 "<b>Крок 3.</b> Встановіть Termux:Boot з F-Droid і відкрийте 1 раз:\n"
+                 "📱 <b>Встановлення Vydra на смартфон Android (Termux)</b>\n\n"
+                 "<b>❓ Що таке Termux?</b>\n"
+                 "Це безкоштовний додаток для Android, який перетворює смартфон на кишеньковий сервер для запуску штучного інтелекту.\n\n"
+                 "<b>📌 КРОК 1. Завантаження Termux з F-Droid:</b>\n"
+                 "⚠️ Завантажуйте <b>лише з F-Droid</b> (версія з Google Play застаріла і не оновлюється):\n"
+                 "https://f-droid.org/packages/com.termux/\n"
+                 "<i>(На сторінці завантаження прогорніть трохи вниз і натисніть посилання <b>«Download APK»</b>)</i>.\n\n"
+                 "<b>📌 КРОК 2. Оптимізація батареї (дуже важливо!):</b>\n"
+                 "Щоб Android не закривав завантаження ШІ-моделей у фоні:\n"
+                 "Відкрийте Налаштування телефону → Застосунки → Termux → Батарея → виберіть <b>«Без обмежень»</b> (або «Не оптимізувати»).\n\n"
+                 "<b>📌 КРОК 3. Автозапуск після перезавантаження:</b>\n"
+                 "Встановіть Termux:Boot з F-Droid і відкрийте його 1 раз:\n"
                  "https://f-droid.org/packages/com.termux.boot/\n\n"
-                 "<b>🚀 ЄДИНА КОМАНДА РОЗГОРТАННЯ:</b>\n"
-                 "Відкрийте <b>Termux</b> і виконайте:\n\n"
+                 "<b>📌 КРОК 4. Запуск встановлення в 1 клік:</b>\n"
+                 "1. Скопіюйте команду нижче.\n"
+                 "2. Відкрийте додаток <b>Termux</b> на смартфоні.\n"
+                 "3. Затисніть пальцем чорний екран і у меню виберіть <b>«Paste» (Вставити)</b>.\n"
+                 "4. Натисніть <b>Enter</b> на клавіатурі:\n\n"
                  "<code>bash &lt;(curl -fsSL https://raw.githubusercontent.com/"
                  "maxfraieho/kindle-butch-gen/master/deploy.sh) -a</code>\n\n"
-                 "📖 <b>Повний посібник Android:</b>\n"
-                 "https://vydra.appwrite.network/install.html\n\n"
-                 "💻 Якщо потрібна десктопна версія для ПК (WSL2 / CUDA): /install_x86")
+                 "🤖 Скрипт автоматично перевірить пам'ять, розгорне мовні моделі ШІ та підніме веб-панель на <code>http://localhost:5000</code>.\n\n"
+                 "📖 <b>Докладний посібник Android:</b> https://vydra.appwrite.network/install.html\n"
+                 "💻 Інструкція для комп'ютера (ПК x86 / CUDA): /install_x86")
         return res.json({"ok": True})
 
     if cmd == "/install_x86":
