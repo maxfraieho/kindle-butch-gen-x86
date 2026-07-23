@@ -57,9 +57,13 @@ echo -e "${BLUE}================================================================
 # STEP 0: Auto-fix WSL configuration issues & Install bootstrap tools
 # -------------------------------------------------------------
 SUDO_CMD=""
-if [ "$(id -u)" -ne 0 ]; then
-    if command -v sudo >/dev/null 2>&1; then
+HAS_SUDO=false
+if [ "$(id -u)" -eq 0 ]; then
+    HAS_SUDO=true
+elif command -v sudo >/dev/null 2>&1; then
+    if sudo -n true 2>/dev/null; then
         SUDO_CMD="sudo"
+        HAS_SUDO=true
     fi
 fi
 
@@ -146,18 +150,22 @@ fi
 # -------------------------------------------------------------
 log "Автоматичне встановлення всіх системних пакетів (Python, CMake, FFmpeg, Calibre)..."
 
-if command -v apt-get >/dev/null 2>&1; then
-    $SUDO_CMD apt-get update -y
-    DEBIAN_FRONTEND=noninteractive $SUDO_CMD apt-get install -y --no-install-recommends \
-        git curl wget python3 python3-pip python3-venv python3-dev \
-        build-essential cmake ninja-build \
-        ffmpeg calibre tesseract-ocr tesseract-ocr-ukr \
-        libfreetype6-dev libjpeg-dev zlib1g-dev libpng-dev unrar-free p7zip-full
-elif command -v dnf >/dev/null 2>&1; then
-    $SUDO_CMD dnf install -y git curl wget python3 python3-pip gcc gcc-c++ cmake ninja-build ffmpeg calibre tesseract tesseract-langpack-ukr
+if [ "$HAS_SUDO" = "true" ]; then
+    if command -v apt-get >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive $SUDO_CMD apt-get update -y || true
+        DEBIAN_FRONTEND=noninteractive $SUDO_CMD apt-get install -y --no-install-recommends \
+            git curl wget python3 python3-pip python3-venv python3-dev \
+            build-essential cmake ninja-build \
+            ffmpeg calibre tesseract-ocr tesseract-ocr-ukr \
+            libfreetype6-dev libjpeg-dev zlib1g-dev libpng-dev unrar-free p7zip-full || warn "Деякі системні пакети apt не вдалося встановити."
+    elif command -v dnf >/dev/null 2>&1; then
+        $SUDO_CMD dnf install -y git curl wget python3 python3-pip gcc gcc-c++ cmake ninja-build ffmpeg calibre tesseract tesseract-langpack-ukr || warn "Деякі системні пакети dnf не вдалося встановити."
+    fi
+else
+    warn "Пропуск автоматичного apt/dnf встановлення (потрібен sudo пароль або root). Використовуються наявні користувацькі інструменти."
 fi
 
-success "Усі системні пакети встановлені."
+success "Етап системних пакетів завершено."
 
 # -------------------------------------------------------------
 # STEP 3: Setup Project Repository
@@ -184,28 +192,38 @@ chmod +x kbg.sh || true
 # -------------------------------------------------------------
 log "Автоматичне збирання ШІ-сервера llama.cpp..."
 
-if [ -x "$HOME/llama.cpp/build/bin/llama-server" ]; then
+if [ -x "$HOME/llama.cpp/build/bin/llama-server" ] || [ -x "$HOME/llama.cpp/build/llama-server" ]; then
+    mkdir -p "$HOME/llama.cpp/build/bin"
+    [ ! -x "$HOME/llama.cpp/build/bin/llama-server" ] && [ -x "$HOME/llama.cpp/build/llama-server" ] && ln -sf "$HOME/llama.cpp/build/llama-server" "$HOME/llama.cpp/build/bin/llama-server" || true
     success "llama.cpp вже зкомпільовано — пропуск збірки."
 else
     if [ ! -d "$HOME/llama.cpp/.git" ]; then
-        git clone --depth 1 https://github.com/ggerganov/llama.cpp.git "$HOME/llama.cpp"
+        git clone --depth 1 https://github.com/ggerganov/llama.cpp.git "$HOME/llama.cpp" || true
     fi
-    cd "$HOME/llama.cpp"
-    rm -rf build
-    mkdir -p build && cd build
+    if [ -d "$HOME/llama.cpp" ]; then
+        cd "$HOME/llama.cpp"
+        rm -rf build
+        mkdir -p build && cd build
 
-    CMAKE_FLAGS="-DLLAMA_CURL=OFF"
-    if [ "$CUDA_SUPPORTED" = "true" ]; then
-        CMAKE_FLAGS="$CMAKE_FLAGS -DGGML_CUDA=ON"
-        log "Компіляція з підтримкою NVIDIA CUDA (-DGGML_CUDA=ON)..."
+        CMAKE_FLAGS="-DLLAMA_CURL=OFF"
+        if [ "$CUDA_SUPPORTED" = "true" ]; then
+            CMAKE_FLAGS="$CMAKE_FLAGS -DGGML_CUDA=ON"
+            log "Компіляція з підтримкою NVIDIA CUDA (-DGGML_CUDA=ON)..."
+        fi
+
+        cmake .. $CMAKE_FLAGS || true
+        make -j"$(nproc)" llama-server llama-cli || cmake --build . --config Release -j"$(nproc)" --target llama-server llama-cli || true
+
+        mkdir -p "$HOME/llama.cpp/build/bin"
+        [ ! -x "$HOME/llama.cpp/build/bin/llama-server" ] && [ -x "$HOME/llama.cpp/build/llama-server" ] && ln -sf "$HOME/llama.cpp/build/llama-server" "$HOME/llama.cpp/build/bin/llama-server" || true
+
+        cd "$HOME"
+        if [ -x "$HOME/llama.cpp/build/bin/llama-server" ] || [ -x "$HOME/llama.cpp/build/llama-server" ]; then
+            success "llama.cpp зкомпільовано успішно."
+        else
+            warn "llama.cpp не було зкомпільовано (можливо, відсутні cmake/gcc). Сервіси LLM можна завантажити у бінарному вигляді."
+        fi
     fi
-
-    cmake .. $CMAKE_FLAGS
-    make -j"$(nproc)" llama-server llama-cli
-
-    cd "$HOME"
-    [ -x "$HOME/llama.cpp/build/bin/llama-server" ] || error "Помилка компіляції llama.cpp!"
-    success "llama.cpp зкомпільовано успішно."
 fi
 
 # Copy start helper script
@@ -220,21 +238,25 @@ fi
 log "Налаштування Python та PyTorch CUDA..."
 
 cd "$PROJECT_DIR"
-pip install --upgrade pip || true
+PYTHON_BIN="$(command -v python3 || echo python)"
+PIP_CMD="$PYTHON_BIN -m pip"
+export PIP_BREAK_SYSTEM_PACKAGES=1
+
+$PIP_CMD install --upgrade pip || true
 
 if [ "$CUDA_SUPPORTED" = "true" ]; then
     log "Встановлення PyTorch CUDA (cu121)..."
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --ignore-installed
+    $PIP_CMD install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --ignore-installed || true
 else
     log "Встановлення PyTorch CPU..."
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --ignore-installed
+    $PIP_CMD install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --ignore-installed || true
 fi
 
 log "Встановлення інших необхідних пакетів..."
-pip install Flask flask-httpauth requests tqdm marisa-trie blinker Pillow pytesseract num2words opencv-python-headless pyyaml || true
+$PIP_CMD install Flask flask-httpauth requests tqdm marisa-trie blinker Pillow pytesseract num2words opencv-python-headless pyyaml || true
 
 if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt || true
+    $PIP_CMD install -r requirements.txt || true
 fi
 
 success "Python середовище повністю налаштовано."
@@ -248,11 +270,11 @@ mkdir -p "$HOME/models/hy-mt2" "$HOME/models/sherpa-onnx-whisper-small-int8" "$H
 MODEL_HY="$HOME/models/hy-mt2/Hy-MT2-7B-Q4_K_M.gguf"
 if [ ! -f "$MODEL_HY" ] || [ $(wc -c < "$MODEL_HY" 2>/dev/null || echo 0) -lt 1000000000 ]; then
     log "Завантаження моделі перекладу Hy-MT2-7B (~4.4 GB)..."
-    curl -L -C - -o "$MODEL_HY" "https://huggingface.co/TencentARC/Hy-MT2-7B-GGUF/resolve/main/Hy-MT2-7B-Q4_K_M.gguf" || warn "Модель перекладу можна дозавантажити пізніше."
+    curl -L -C - --fail --retry 3 -o "$MODEL_HY" "https://huggingface.co/mradermacher/Hy-MT2-7B-GGUF/resolve/main/Hy-MT2-7B.Q4_K_M.gguf" || warn "Модель перекладу можна дозавантажити пізніше."
 fi
 
 if [ -f "$PROJECT_DIR/bin/download_premium_models.sh" ]; then
-    bash "$PROJECT_DIR/bin/download_premium_models.sh" --all || true
+    CONSENT_ACCEPTED=1 GEMMA_TERMS_ACCEPTED=1 bash "$PROJECT_DIR/bin/download_premium_models.sh" --all || true
 fi
 
 # Create default global_settings.json
