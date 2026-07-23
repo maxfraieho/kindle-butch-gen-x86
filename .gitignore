@@ -30,6 +30,8 @@ wget-log.*
 
 # Web Credentials & Scratch Workspace
 web_credentials.json
+kbg_web/.flask_secret_key
+.active_conversion.json
 scratch/
 books/
 screenshots/
