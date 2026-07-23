@@ -12,11 +12,14 @@
 # number of times.
 set -uo pipefail
 
-KBG_HOME="$HOME/kindle-butch-gen"
+KBG_HOME="$HOME/kindle-butch-gen-x86"
+if [ ! -d "$KBG_HOME" ]; then
+    KBG_HOME="$HOME/kindle-butch-gen"
+fi
 
-# 1. Autostart SSH daemon
-if ! pgrep -x "sshd" >/dev/null; then
-    sshd
+# 1. Autostart SSH daemon (if available)
+if command -v sshd >/dev/null 2>&1 && ! pgrep -x "sshd" >/dev/null; then
+    sshd 2>/dev/null || true
 fi
 
 # 2. Autostart Llama Translation Server (Hy-MT2-7B on port 8081)
@@ -24,10 +27,11 @@ fi
 # Can be enabled explicitly by adding "autostart_llama": true to global_settings.json.
 AUTOSTART_LLAMA=$(python3 -c "import json; print(str(json.load(open('$KBG_HOME/global_settings.json')).get('autostart_llama', False)).lower())" 2>/dev/null || echo "false")
 if [ "$AUTOSTART_LLAMA" = "true" ]; then
-    if ! pgrep -f "llama-server.*8081" >/dev/null; then
-        echo "Autostart: Starting llama-server on port 8081..."
-        nohup bash "$HOME/start-translation-server.sh" > "$HOME/llama-boot.log" 2>&1 &
-    fi
+        START_SCRIPT="$HOME/start-translation-server.sh"
+        if [ ! -f "$START_SCRIPT" ]; then
+            START_SCRIPT="$KBG_HOME/bin/start-translation-server.sh"
+        fi
+        nohup bash "$START_SCRIPT" > "$HOME/llama-boot.log" 2>&1 &
 else
     echo "Autostart: llama-server autostart is disabled by configuration (autostart_llama=false)."
 fi
