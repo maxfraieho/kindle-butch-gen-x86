@@ -1932,7 +1932,15 @@ def main():
     detector_model_path = download_detector_model()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     log(f"Initializing comic text detector on device: {device}...")
-    detector = TextDetector(model_path=detector_model_path, device=device)
+    try:
+        detector = TextDetector(model_path=detector_model_path, device=device)
+    except TypeError:
+        detector = TextDetector()
+        import asyncio
+        if hasattr(detector, "load"):
+            asyncio.run(detector.load(device))
+        elif hasattr(detector, "_load"):
+            asyncio.run(detector._load(device))
     
     mocr = None
     if args.lang == 'ja':
