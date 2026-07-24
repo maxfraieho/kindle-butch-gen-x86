@@ -21,6 +21,13 @@ from common.file_lock import file_lock
 from kbg_web.status_helper import calculate_progress, get_pdf_page_count
 from kbg_web import edit_store
 
+def wrap_container_cmd(cmd):
+    """Wraps command to execute in PRoot container on Termux (if proot-distro exists),
+    otherwise executes directly using system Python/environment on x86/Linux/WSL."""
+    if shutil.which("proot-distro"):
+        return ["proot-distro", "login", "ubuntu", "--"] + cmd
+    return cmd
+
 TTS_ENGINES = {
     "supertonic3": {
         "languages": ["ar", "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hi", "hu", "id", "it", "ja", "ko", "lv", "lt", "pl", "pt", "ro", "ru", "sk", "sl", "es", "sv", "tr", "uk", "vi", "na"],
@@ -821,15 +828,14 @@ def run_conversion_api(slug):
         except Exception:
             pass
             
-        # Run translate_manga.py inside PRoot Ubuntu container
-        cmd = [
-            "proot-distro", "login", "ubuntu", "--", 
+        # Run translate_manga.py inside PRoot container (or native python)
+        cmd = wrap_container_cmd([
             "python3", "-u", os.path.join(repo_dir, "translate_manga.py"),
             "--input", manga_input,
             "--output", manga_output,
             "--lang", cfg.get("source_lang", "en"),
             "--progress-file", progress_file
-        ]
+        ])
         # Include glossary if it exists
         glossary_path = os.path.join(paths["book_dir"], "glossary.json")
         if os.path.exists(glossary_path):
@@ -1183,11 +1189,10 @@ def tts_preview(slug):
         os.makedirs(os.path.dirname(preview_wav_path), exist_ok=True)
         if target_lang == "uk":
             try:
-                cmd_stress = [
-                    "proot-distro", "login", "ubuntu", "--",
+                cmd_stress = wrap_container_cmd([
                     "python3", os.path.join(repo_dir, "bin", "stressify_batch.py"),
                     "--inline", text
-                ]
+                ])
                 res_stress = subprocess.run(cmd_stress, capture_output=True, text=True, timeout=15)
                 if res_stress.returncode == 0:
                     stressed_text = res_stress.stdout.strip()
@@ -2915,11 +2920,10 @@ def edit_regenerate_audio(slug, chunk_hash):
         target_lang = paths.get("target_lang", "uk")
         if target_lang == "uk":
             try:
-                cmd_stress = [
-                    "proot-distro", "login", "ubuntu", "--",
+                cmd_stress = wrap_container_cmd([
                     "python3", os.path.join(repo_dir, "bin", "stressify_batch.py"),
                     "--inline", tts_text
-                ]
+                ])
                 res_stress = subprocess.run(cmd_stress, capture_output=True, text=True, timeout=15)
                 if res_stress.returncode == 0 and res_stress.stdout.strip():
                     tts_text = res_stress.stdout.strip()
@@ -3375,8 +3379,7 @@ def edit_regenerate_manga_page(slug, page_filename):
     with open(bbox_overrides_path, "w", encoding="utf-8") as f:
         json.dump(bbox_overrides, f, ensure_ascii=False)
 
-    cmd = [
-        "proot-distro", "login", "ubuntu", "--",
+    cmd = wrap_container_cmd([
         "python3", "-u", os.path.join(repo_dir, "translate_manga.py"),
         "--input", manga_input,
         "--output", manga_output,
@@ -3384,7 +3387,7 @@ def edit_regenerate_manga_page(slug, page_filename):
         "--regenerate-page", page_filename,
         "--overrides-json", overrides_path,
         "--bbox-overrides-json", bbox_overrides_path
-    ]
+    ])
     glossary_path = os.path.join(paths["book_dir"], "glossary.json")
     if os.path.exists(glossary_path):
         cmd.extend(["--glossary", glossary_path])

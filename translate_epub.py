@@ -18,6 +18,13 @@ from common.book_paths import resolve_book_paths
 from common.utils import get_hash, to_xml_format, wait_for_server_ready, translate_segment_with_retry
 
 
+def wrap_container_cmd(cmd):
+    """Wraps command to execute in PRoot container on Termux (if proot-distro exists),
+    otherwise executes directly using system Python/environment on x86/Linux/WSL."""
+    if shutil.which("proot-distro"):
+        return ["proot-distro", "login", "ubuntu", "--"] + cmd
+    return cmd
+
 def translate_epub_images(temp_dir, source_lang, repo_dir):
     # Walk temp_dir and find all images
     image_extensions = [".png", ".jpg", ".jpeg", ".webp"]
@@ -38,7 +45,7 @@ def translate_epub_images(temp_dir, source_lang, repo_dir):
         
     log(f"Found {len(images_to_translate)} illustration image(s) to process via Manga Translator.")
     
-    # Process each image using translate_manga.py inside PRoot container
+    # Process each image using translate_manga.py inside PRoot container (or native python)
     for img_idx, img_path in enumerate(images_to_translate):
         log(f"Processing image {img_idx+1}/{len(images_to_translate)}: {os.path.basename(img_path)}")
         
@@ -46,13 +53,12 @@ def translate_epub_images(temp_dir, source_lang, repo_dir):
         out_dir = os.path.join(os.path.dirname(img_path), "manga_out_temp")
         os.makedirs(out_dir, exist_ok=True)
         
-        cmd = [
-            "proot-distro", "login", "ubuntu", "--",
+        cmd = wrap_container_cmd([
             "python3", os.path.join(repo_dir, "translate_manga.py"),
             "--input", img_path,
             "--output", out_dir,
             "--lang", source_lang
-        ]
+        ])
         
         try:
             import subprocess
