@@ -1086,10 +1086,25 @@ def process_page(img, page_basename, glossary, api_url, lang, detector, mocr, fo
     page_bubbles_meta). If no text bubbles are found/recognized,
     final_img_bgr and cleaned_img_bgr are both `img` untouched, and both
     lists are empty."""
+
+def run_text_detector(detector, img, refine_mode=None, keep_undetected_mask=True):
+    if callable(detector):
+        return detector(img, refine_mode=refine_mode, keep_undetected_mask=keep_undetected_mask)
+    if hasattr(detector, "_infer"):
+        import asyncio
+        textlines, mask_refined, _ = asyncio.run(detector._infer(img, detect_size=1024, text_threshold=0.3, box_threshold=0.6, unclip_ratio=1.5))
+        return None, mask_refined, textlines
+    if hasattr(detector, "detect"):
+        import asyncio
+        textlines = asyncio.run(detector.detect(img))
+        return None, None, textlines
+    raise RuntimeError("ComicTextDetector object is not callable or supported")
+
+def process_page(img, page_basename, glossary, api_url, lang, detector, mocr, font_path, overrides=None, bbox_overrides=None):
     page_quality_flags = []
     page_bubbles_meta = []
 
-    mask, mask_refined, blk_list = detector(img, refine_mode=REFINEMASK_INPAINT, keep_undetected_mask=True)
+    mask, mask_refined, blk_list = run_text_detector(detector, img, refine_mode=REFINEMASK_INPAINT, keep_undetected_mask=True)
     blk_list = dedupe_blocks(blk_list)
 
     if not blk_list:
