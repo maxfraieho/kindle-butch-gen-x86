@@ -18,7 +18,6 @@ nohup ./llama-server \
   -ngl 99 \
   --parallel 1 \
   -t 4 \
-  --no-mmap \
   --host 0.0.0.0 \
   --port "$PORT" \
   > ~/llama-translation-server.log 2>&1 & disown

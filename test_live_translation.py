@@ -52,31 +52,39 @@ def main():
         print("Error: Refactored translate_stage.py failed!")
         sys.exit(1)
         
-    # 3. Run old translate_stage.py
-    print("\n>>> Running original translate_stage.py...")
-    cmd_old = [
-        sys.executable,
-        "/data/data/com.termux/files/home/translate_stage.py",
-        "-i", input_path,
-        "-o", old_output_path,
-        "--cache", old_cache_path,
-        "--api-url", "http://localhost:8081/v1/chat/completions"
-    ]
-    res_old = subprocess.run(cmd_old, capture_output=True, text=True)
-    print("STDOUT:")
-    print(res_old.stdout)
-    print("STDERR:")
-    print(res_old.stderr)
-    
-    if res_old.returncode != 0:
-        print("Error: Original translate_stage.py failed!")
-        sys.exit(1)
+    # 3. Run old translate_stage.py if present
+    old_script = "/data/data/com.termux/files/home/translate_stage.py"
+    has_old = os.path.exists(old_script)
+    if has_old:
+        print("\n>>> Running original translate_stage.py...")
+        cmd_old = [
+            sys.executable,
+            old_script,
+            "-i", input_path,
+            "-o", old_output_path,
+            "--cache", old_cache_path,
+            "--api-url", "http://localhost:8081/v1/chat/completions"
+        ]
+        res_old = subprocess.run(cmd_old, capture_output=True, text=True)
+        print("STDOUT:")
+        print(res_old.stdout)
+        print("STDERR:")
+        print(res_old.stderr)
+        
+        if res_old.returncode != 0:
+            print("Error: Original translate_stage.py failed!")
+            sys.exit(1)
+    else:
+        print("\n>>> Original translate_stage.py not found at Termux path, skipping legacy comparison.")
         
     # Read outputs
     with open(new_output_path, "r", encoding="utf-8") as f:
         new_out = f.read()
-    with open(old_output_path, "r", encoding="utf-8") as f:
-        old_out = f.read()
+    if os.path.exists(old_output_path):
+        with open(old_output_path, "r", encoding="utf-8") as f:
+            old_out = f.read()
+    else:
+        old_out = ""
         
     print("\n=============================================")
     print("ORIGINAL INPUT:")

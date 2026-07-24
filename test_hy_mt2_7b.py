@@ -68,15 +68,16 @@ test_cases = [
     "В эпоху ИИ программисты всё меньше пишут код вручную и всё больше описывают желаемый результат.",
 ]
 
-print("=== Hy-MT2-7B Translation Test (RU → UK) ===\n")
-if not check_model():
-    print("Server not ready!")
-    sys.exit(1)
+if __name__ == "__main__":
+    print("=== Hy-MT2-7B Translation Test (RU → UK) ===\n")
+    if not check_model():
+        print("Server not ready!")
+        sys.exit(1)
 
-print()
-for i, text in enumerate(test_cases, 1):
-    print(f"--- Test {i} ---")
-    print(f"RU: {text}")
-    result = translate_hy_mt2(text)
-    print(f"UK: {result}")
     print()
+    for i, text in enumerate(test_cases, 1):
+        print(f"--- Test {i} ---")
+        print(f"RU: {text}")
+        result = translate_hy_mt2(text)
+        print(f"UK: {result}")
+        print()

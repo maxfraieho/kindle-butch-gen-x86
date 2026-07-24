@@ -35,3 +35,4 @@ kbg_web/.flask_secret_key
 scratch/
 books/
 screenshots/
+test_live_*
