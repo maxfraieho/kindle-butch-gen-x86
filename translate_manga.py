@@ -1147,23 +1147,35 @@ def process_page(img, page_basename, glossary, api_url, lang, detector, mocr, fo
             txt = mocr(pil_crop).strip()
             tess_conf = None
         else:
-            # TASK-33: image_to_data (not image_to_string) is the only
-            # pytesseract call that exposes per-word confidence.
-            data = pytesseract.image_to_data(pil_crop, lang='eng', config='--psm 6', output_type=pytesseract.Output.DICT)
-            words, confs = [], []
-            for w_idx, word in enumerate(data.get("text", [])):
-                word = word.strip()
-                if not word:
-                    continue
-                words.append(word)
+            try:
+                data = pytesseract.image_to_data(pil_crop, lang='eng', config='--psm 6', output_type=pytesseract.Output.DICT)
+                words, confs = [], []
+                for w_idx, word in enumerate(data.get("text", [])):
+                    word = word.strip()
+                    if not word:
+                        continue
+                    words.append(word)
+                    try:
+                        c = float(data.get("conf", [])[w_idx])
+                    except (IndexError, TypeError, ValueError):
+                        c = -1
+                    if c >= 0:
+                        confs.append(c)
+                txt = " ".join(words)
+                tess_conf = (sum(confs) / len(confs)) if confs else None
+            except Exception as tess_err:
                 try:
-                    c = float(data.get("conf", [])[w_idx])
-                except (IndexError, TypeError, ValueError):
-                    c = -1
-                if c >= 0:
-                    confs.append(c)
-            txt = " ".join(words)
-            tess_conf = (sum(confs) / len(confs)) if confs else None
+                    import easyocr
+                    reader = getattr(process_page, "_easyocr_reader", None)
+                    if reader is None:
+                        reader = easyocr.Reader(['en'], gpu=torch.cuda.is_available())
+                        setattr(process_page, "_easyocr_reader", reader)
+                    res = reader.readtext(crop, detail=0)
+                    txt = " ".join(res).strip()
+                    tess_conf = None
+                except Exception:
+                    txt = mocr(pil_crop).strip() if mocr else ""
+                    tess_conf = None
 
         txt = txt.replace("\n", " ").replace("\r", " ").strip()
         txt = " ".join(txt.split())
