@@ -45,9 +45,12 @@ try:
             pass
     from comic_text_detector.inference import TextDetector
     from comic_text_detector.utils.textmask import REFINEMASK_INPAINT
+    HAS_TORCH_DETECTOR = True
 except ImportError as e:
-    print(f"Error loading PyTorch / comic_text_detector: {e}")
-    sys.exit(1)
+    HAS_TORCH_DETECTOR = False
+    TextDetector = None
+    REFINEMASK_INPAINT = None
+    _torch_import_error = str(e)
 
 try:
     from natsort import natsorted
@@ -1918,6 +1921,10 @@ def main():
             log(f"Warning: Failed to load glossary: {e}")
 
     # Set up models
+    if not HAS_TORCH_DETECTOR:
+        log(f"Error: PyTorch / comic_text_detector is not installed ({_torch_import_error}).")
+        log("Please install PyTorch and comic_text_detector in your Python environment.")
+        sys.exit(1)
     detector_model_path = download_detector_model()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     log(f"Initializing comic text detector on device: {device}...")
