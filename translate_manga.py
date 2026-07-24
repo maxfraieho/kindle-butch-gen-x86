@@ -43,8 +43,12 @@ try:
                 print("[translate_manga.py] SVE CPU detected: disabled mkldnn/oneDNN backend.")
         except Exception:
             pass
-    from comic_text_detector.inference import TextDetector
-    from comic_text_detector.utils.textmask import REFINEMASK_INPAINT
+    try:
+        from comic_text_detector.inference import TextDetector
+        from comic_text_detector.utils.textmask import REFINEMASK_INPAINT
+    except ImportError:
+        from manga_translator.detection.ctd import ComicTextDetector as TextDetector
+        from manga_translator.detection.ctd_utils.textmask import REFINEMASK_INPAINT
     HAS_TORCH_DETECTOR = True
 except ImportError as e:
     HAS_TORCH_DETECTOR = False
