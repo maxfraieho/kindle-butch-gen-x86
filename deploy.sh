@@ -242,30 +242,53 @@ PYTHON_BIN="$(command -v python3 || echo python)"
 PIP_CMD="$PYTHON_BIN -m pip"
 export PIP_BREAK_SYSTEM_PACKAGES=1
 
+# Use main disk for pip temp dir to prevent 'No space left on device' errors on WSL 2GB /tmp RAM disk
+export TMPDIR="${TMPDIR:-$HOME/scratch}"
+mkdir -p "$TMPDIR"
+
+# Pre-seed Appwrite API key if missing so entitlement checks work out of the box
+APPWRITE_KEY_FILE="$HOME/.kbg_appwrite_key"
+if [ ! -f "$APPWRITE_KEY_FILE" ]; then
+    log "Налаштування системного ключа доступу Appwrite..."
+    echo "standard_5652d01a6ff445fd2fdf58b5034bcdbeb3cef31736f94971825a220eb132cba8a8c484b795b664fbc5c06a6588ff19bbfd126bb143ab5962c9f6b7cdd7295b7e1331255427067235fcabab9b0fffbb80cf18fef128bac2392430e073bedb737029d5d83b0ffd75e9f291289c69bcb8dde7b2519e8055f404b39f1c7155e3ae0f" > "$APPWRITE_KEY_FILE"
+    chmod 600 "$APPWRITE_KEY_FILE" || true
+    success "Ключ доступу Appwrite збережено у $APPWRITE_KEY_FILE"
+fi
+
 $PIP_CMD install --upgrade pip || true
 
 if [ "$CUDA_SUPPORTED" = "true" ]; then
-    log "Встановлення PyTorch CUDA (cu121)..."
-    $PIP_CMD install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --ignore-installed || true
+    log "Встановлення PyTorch CUDA..."
+    $PIP_CMD install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 || $PIP_CMD install torch torchvision torchaudio || true
 else
     log "Встановлення PyTorch CPU..."
-    $PIP_CMD install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --ignore-installed || true
+    $PIP_CMD install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu || $PIP_CMD install torch torchvision torchaudio || true
 fi
 
-log "Встановлення інших необхідних пакетів..."
-$PIP_CMD install Flask flask-httpauth requests tqdm marisa-trie blinker Pillow pytesseract num2words opencv-python-headless pyyaml || true
+log "Встановлення необхідних Python-пакетів та залежностей розпізнавання манґи..."
+$PIP_CMD install Flask flask-httpauth requests tqdm marisa-trie blinker Pillow pytesseract num2words opencv-python-headless pyyaml natsort || true
 
-if [ -f "requirements.txt" ]; then
-    $PIP_CMD install -r requirements.txt || true
+# Install manga-image-translator (comic_text_detector)
+if ! $PYTHON_BIN -c "import comic_text_detector" >/dev/null 2>&1; then
+    log "Встановлення модуля comic_text_detector (manga-image-translator)..."
+    $PIP_CMD install --ignore-requires-python --no-deps git+https://github.com/zyddnys/manga-image-translator.git || true
+fi
+
+# Verification step
+log "Перевірка працездатності залежностей Python..."
+if $PYTHON_BIN -c "import torch; print(f'  [PASS] PyTorch {torch.__version__} (CUDA: {torch.cuda.is_available()})')" 2>/dev/null; then
+    success "PyTorch завантажується успішно."
+else
+    warn "PyTorch не вдалося імпортувати напряму."
 fi
 
 success "Python середовище повністю налаштовано."
 
 # -------------------------------------------------------------
-# STEP 6: Automatic Download of AI Models
+# STEP 6: Automatic Download of AI Models (Core + Premium)
 # -------------------------------------------------------------
 log "Автоматичне завантаження моделей ШІ..."
-mkdir -p "$HOME/models/hy-mt2" "$HOME/models/sherpa-onnx-whisper-small-int8" "$HOME/models/gemma3-4b"
+mkdir -p "$HOME/models/hy-mt2" "$HOME/models/sherpa-onnx-whisper-small-int8" "$HOME/models/gemma3-4b" "$PROJECT_DIR/models/comic_text_detector"
 
 MODEL_HY="$HOME/models/hy-mt2/Hy-MT2-7B-Q4_K_M.gguf"
 if [ ! -f "$MODEL_HY" ] || [ $(wc -c < "$MODEL_HY" 2>/dev/null || echo 0) -lt 1000000000 ]; then
@@ -273,7 +296,16 @@ if [ ! -f "$MODEL_HY" ] || [ $(wc -c < "$MODEL_HY" 2>/dev/null || echo 0) -lt 10
     curl -L -C - --fail --retry 3 -o "$MODEL_HY" "https://huggingface.co/mradermacher/Hy-MT2-7B-GGUF/resolve/main/Hy-MT2-7B.Q4_K_M.gguf" || warn "Модель перекладу можна дозавантажити пізніше."
 fi
 
+# Pre-download comic_text_detector PyTorch model
+DETECTOR_PT="$PROJECT_DIR/models/comic_text_detector/detector.pt"
+if [ ! -f "$DETECTOR_PT" ] || [ $(wc -c < "$DETECTOR_PT" 2>/dev/null || echo 0) -lt 10000000 ]; then
+    log "Завантаження моделі детекції тексту манґи (comictextdetector.pt)..."
+    curl -L -C - --fail --retry 3 -o "$DETECTOR_PT" "https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/comictextdetector.pt" || warn "Детектор манґи дозавантажиться під час першого запуску."
+fi
+
+# Download all premium models (Gemma 3 4B + mmproj for Agent-Editor / Cast Registry and Whisper Small INT8)
 if [ -f "$PROJECT_DIR/bin/download_premium_models.sh" ]; then
+    log "Автоматичне розгортання моделей преміального доступу (Gemma 3 4B, mmproj, Whisper ASR)..."
     CONSENT_ACCEPTED=1 GEMMA_TERMS_ACCEPTED=1 bash "$PROJECT_DIR/bin/download_premium_models.sh" --all || true
 fi
 
