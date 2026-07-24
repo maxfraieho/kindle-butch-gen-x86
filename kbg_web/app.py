@@ -1234,9 +1234,15 @@ def load_global_settings():
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                if "output_root" in data and data["output_root"]:
+                    data["output_root"] = os.path.abspath(os.path.expanduser(data["output_root"]))
+                return data
         except Exception:
             pass
+    user_docs = os.path.abspath(os.path.expanduser("~/Documents/Books"))
+    if not os.path.exists("/storage/emulated/0"):
+        return {"output_root": user_docs}
     return {"output_root": "/storage/emulated/0/Documents/kindle-butch-gen/library"}
 
 def _atomic_write_json(path, data, **dump_kwargs):
@@ -1263,38 +1269,50 @@ def save_global_settings(settings):
 
 @app.route("/api/browse-fs")
 def browse_fs():
-    """TASK-52 hardening: the 'Failed to load directories' report could not
-    be reproduced (both roots list fine when storage permission is granted
-    and Flask is up), so instead of a guess-fix this endpoint now (a) can
-    never return a non-JSON 500 - every OSError becomes a JSON error with
-    the REAL message, (b) falls back from the sdcard root to the Termux
-    home when Android storage isn't accessible (e.g. Flask autostarted
-    via Termux:Boot before storage mounted, or termux-setup-storage never
-    run), with a hint the UI shows verbatim."""
     termux_home = os.environ.get("TERMUX_HOME", os.path.expanduser("~"))
-    ALLOWED_ROOTS = ["/storage/emulated/0", termux_home]
+    user_home = os.path.expanduser("~")
+    ALLOWED_ROOTS = ["/storage/emulated/0", termux_home, user_home, "/home", "/mnt", "/media"]
+    
     requested = request.args.get("path")
-    path = os.path.abspath(requested or "/storage/emulated/0")
-    if not any(path.startswith(root) for root in ALLOWED_ROOTS):
+    if requested:
+        requested = os.path.expanduser(requested.strip())
+    
+    default_root = "/storage/emulated/0" if os.path.isdir("/storage/emulated/0") else user_home
+    path = os.path.abspath(requested or default_root)
+    
+    if not any(path.startswith(root) for root in ALLOWED_ROOTS if root):
         return jsonify({"error": "Доступ за межами дозволених каталогів заборонено"}), 403
 
     hint = None
     if requested is None and not os.path.isdir(path):
-        # Default root unavailable - fall back instead of failing.
-        path = termux_home
-        hint = ("Сховище Android недоступне (виконайте termux-setup-storage "
-                "або перевідкрийте Termux) — показано домашню теку Termux.")
+        path = user_home
+        if os.path.isdir("/storage/emulated/0"):
+            hint = ("Сховище Android недоступне (виконайте termux-setup-storage "
+                    "або перевідкрийте Termux) — показано домашню теку.")
+    
     if not os.path.isdir(path):
-        return jsonify({"error": f"Каталог не існує: {path}"}), 400
+        try:
+            os.makedirs(path, exist_ok=True)
+        except Exception:
+            pass
+
+    if not os.path.isdir(path):
+        parent_dir = os.path.dirname(path)
+        if os.path.isdir(parent_dir):
+            path = parent_dir
+        elif os.path.isdir(user_home):
+            path = user_home
+        else:
+            return jsonify({"error": f"Каталог не існує: {path}"}), 400
+
     try:
         entries = []
         for item in sorted(os.listdir(path)):
             full = os.path.join(path, item)
             if os.path.isdir(full) and not item.startswith('.'):
                 entries.append({"name": item, "path": full})
-        parent = os.path.dirname(path) if path not in ALLOWED_ROOTS else None
-        return jsonify({"current": path, "parent": parent, "dirs": entries,
-                        "hint": hint})
+        parent = os.path.dirname(path) if not any(path == root for root in ALLOWED_ROOTS if root) else None
+        return jsonify({"current": path, "parent": parent, "dirs": entries, "hint": hint})
     except OSError as e:
         return jsonify({"error": f"{type(e).__name__}: {e}"}), 403
 
@@ -1302,8 +1320,9 @@ def browse_fs():
 def set_output_root():
     data = request.get_json() or {}
     new_root = data.get("path", "").strip()
-    if not new_root or not os.path.isabs(new_root):
+    if not new_root:
         return jsonify({"status": "error", "message": "Invalid path"}), 400
+    new_root = os.path.abspath(os.path.expanduser(new_root))
     try:
         os.makedirs(new_root, exist_ok=True)  # verification that we can write
     except Exception as e:

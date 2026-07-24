@@ -1,5 +1,5 @@
 {
-  "output_root": "~/Documents/Books",
+  "output_root": "/home/arsen/Documents/Books",
   "translation_model": "~/models/hy-mt2/Hy-MT2-7B-Q4_K_M.gguf",
   "editor_model": "~/models/gemma3-4b/gemma-3-4b-it-Q4_K_M.gguf",
   "autostart_llama": true

@@ -50,7 +50,8 @@ def resolve_book_paths(repo_dir, slug, config_path=None):
         except Exception as e:
             print(f"[Paths] Warning: Failed to load global settings: {e}")
             
-    output_root = global_settings.get("output_root", "/storage/emulated/0/Documents/kindle-butch-gen/library")
+    default_root = "/storage/emulated/0/Documents/kindle-butch-gen/library" if os.path.exists("/storage/emulated/0") else os.path.expanduser("~/Documents/Books")
+    output_root = os.path.abspath(os.path.expanduser(global_settings.get("output_root", default_root)))
     book_output_dir = os.path.join(output_root, slug)
 
     paths = {
