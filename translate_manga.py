@@ -34,29 +34,27 @@ if repo_dir not in sys.path:
 from kbg_web import edit_store
 from common.book_paths import resolve_book_paths
 
-# Import our TextDetector and natsort (installed in PRoot container)
-try:
-    import torch
-    # TASK-64: on ARMv9 SoCs whose /proc/cpuinfo advertises SVE (e.g.
-    # Snapdragon 8 Elite 2), PyTorch's oneDNN/ACL conv backend selects
-    # SVE kernels that the Android kernel doesn't let userspace execute,
-    # killing the process with SIGILL on the very first forward pass.
-    # Bisected live: torch.load and model construction are fine, det.net(x)
-    # crashes; ATEN_CPU_CAPABILITY=default alone does NOT help (the crash
-    # is in mkldnn/ACL, not ATen dispatch) - disabling mkldnn is the one
-    # confirmed fix. Only applied when torch detects SVE, so older
-    # (ARMv8/NEON) devices keep the faster oneDNN path untouched.
-    if torch.backends.cpu.get_cpu_capability().startswith("SVE"):
-        torch.backends.mkldnn.enabled = False
-        print("[translate_manga.py] SVE CPU detected: disabled mkldnn/oneDNN "
-              "backend (Android kernels commonly reject userspace SVE - see TASK-64).")
-    from comic_text_detector.inference import TextDetector
-    from comic_text_detector.utils.textmask import REFINEMASK_INPAINT
-    from natsort import natsorted
-except ImportError as e:
-    print(f"Error: Missing dependency in PRoot environment: {e}")
-    print("This script must be run inside the PRoot Ubuntu container where packages are installed.")
-    sys.exit(1)
+import torch
+# TASK-64: on ARMv9 SoCs whose /proc/cpuinfo advertises SVE (e.g.
+# Snapdragon 8 Elite 2), PyTorch's oneDNN/ACL conv backend selects
+# SVE kernels that the Android kernel doesn't let userspace execute,
+# killing the process with SIGILL on the very first forward pass.
+# Bisected live: torch.load and model construction are fine, det.net(x)
+# crashes; ATEN_CPU_CAPABILITY=default alone does NOT help (the crash
+# is in mkldnn/ACL, not ATen dispatch) - disabling mkldnn is the one
+# confirmed fix. Only applied when torch detects SVE, so older
+# (ARMv8/NEON) devices keep the faster oneDNN path untouched.
+if hasattr(torch.backends, "cpu") and hasattr(torch.backends.cpu, "get_cpu_capability"):
+    try:
+        if torch.backends.cpu.get_cpu_capability().startswith("SVE"):
+            torch.backends.mkldnn.enabled = False
+            print("[translate_manga.py] SVE CPU detected: disabled mkldnn/oneDNN "
+                  "backend (Android kernels commonly reject userspace SVE - see TASK-64).")
+    except Exception:
+        pass
+from comic_text_detector.inference import TextDetector
+from comic_text_detector.utils.textmask import REFINEMASK_INPAINT
+from natsort import natsorted
 
 def log(msg):
     print(f"[{Path(__file__).name}] {msg}")
