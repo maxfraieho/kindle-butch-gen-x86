@@ -826,13 +826,17 @@
                             ` : ''}
 
                             <div id="terminal-${book.slug}" class="terminal-inside-card" style="display: ${currentLogsSlug === book.slug ? 'block' : 'none'}; margin-top: 1rem;">
-                                <div class="terminal-header" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.5rem; border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <div class="terminal-header" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom: 1px solid rgba(255,255,255,0.08);">
                                     <span style="font-size: 0.8rem; font-family: 'Fira Code', monospace; display: flex; align-items: center; gap: 0.5rem;">
                                         <span id="terminalDot-${book.slug}" class="status-dot"></span> Console Logs
                                     </span>
-                                    <button class="btn-close" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.2rem; padding: 0 0.5rem;" onclick="hideBookTerminal('${book.slug}')">&times;</button>
+                                    <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                        <button onclick="copyLogs('${book.slug}')" class="btn btn-sm" style="padding: 0.2rem 0.55rem; font-size: 0.72rem; border-radius: 5px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; transition: background 0.2s;" title="Копіювати весь лог у буфер обміну">📋 Копіювати</button>
+                                        <button onclick="downloadLogs('${book.slug}')" class="btn btn-sm" style="padding: 0.2rem 0.55rem; font-size: 0.72rem; border-radius: 5px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; cursor: pointer; display: flex; align-items: center; gap: 0.25rem; transition: background 0.2s;" title="Завантажити лог у файл .txt">📥 Завантажити .txt</button>
+                                        <button class="btn-close" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.2rem; padding: 0 0.4rem; margin-left: 0.2rem;" onclick="hideBookTerminal('${book.slug}')">&times;</button>
+                                    </div>
                                 </div>
-                                <div class="terminal-log-inside" id="terminalLog-${book.slug}" style="height: 180px; overflow-y: auto; background: rgba(0, 0, 0, 0.4); font-family: 'Fira Code', monospace; font-size: 0.75rem; padding: 0.75rem; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; white-space: pre-wrap; word-break: break-all; color: #a7f3d0; text-shadow: 0 0 2px rgba(164, 250, 200, 0.2);">${lastLogsCache[book.slug] || 'Select a book to display live logs.'}</div>
+                                <div class="terminal-log-inside" id="terminalLog-${book.slug}" style="height: 220px; overflow-y: auto; background: rgba(0, 0, 0, 0.4); font-family: 'Fira Code', monospace; font-size: 0.75rem; padding: 0.75rem; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; white-space: pre-wrap; word-break: break-all; color: #a7f3d0; text-shadow: 0 0 2px rgba(164, 250, 200, 0.2); user-select: text; -webkit-user-select: text;">${lastLogsCache[book.slug] || 'Select a book to display live logs.'}</div>
                             </div>
                         </div>
                     `;
@@ -1061,6 +1065,52 @@
             } catch (err) {
                 alert('Request failed: ' + err.message);
             }
+        }
+
+        function copyLogs(slug) {
+            const text = lastLogsCache[slug] || document.getElementById(`terminalLog-${slug}`)?.innerText || '';
+            if (!text || text.includes('Select a book to display live logs.')) {
+                alert('Немає записів логів для копіювання.');
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('📋 Лог успішно скопійовано в буфер обміну!');
+                }).catch(() => {
+                    _fallbackCopyText(text);
+                });
+            } else {
+                _fallbackCopyText(text);
+            }
+        }
+
+        function _fallbackCopyText(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('📋 Лог скопійовано в буфер обміну!');
+        }
+
+        function downloadLogs(slug) {
+            const text = lastLogsCache[slug] || document.getElementById(`terminalLog-${slug}`)?.innerText || '';
+            if (!text || text.includes('Select a book to display live logs.')) {
+                alert('Немає записів логів для завантаження.');
+                return;
+            }
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${slug}_conversion.log`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function selectBookForLogs(slug, title) {
