@@ -34,27 +34,25 @@ if repo_dir not in sys.path:
 from kbg_web import edit_store
 from common.book_paths import resolve_book_paths
 
-import torch
-# TASK-64: on ARMv9 SoCs whose /proc/cpuinfo advertises SVE (e.g.
-# Snapdragon 8 Elite 2), PyTorch's oneDNN/ACL conv backend selects
-# SVE kernels that the Android kernel doesn't let userspace execute,
-# killing the process with SIGILL on the very first forward pass.
-# Bisected live: torch.load and model construction are fine, det.net(x)
-# crashes; ATEN_CPU_CAPABILITY=default alone does NOT help (the crash
-# is in mkldnn/ACL, not ATen dispatch) - disabling mkldnn is the one
-# confirmed fix. Only applied when torch detects SVE, so older
-# (ARMv8/NEON) devices keep the faster oneDNN path untouched.
-if hasattr(torch.backends, "cpu") and hasattr(torch.backends.cpu, "get_cpu_capability"):
-    try:
-        if torch.backends.cpu.get_cpu_capability().startswith("SVE"):
-            torch.backends.mkldnn.enabled = False
-            print("[translate_manga.py] SVE CPU detected: disabled mkldnn/oneDNN "
-                  "backend (Android kernels commonly reject userspace SVE - see TASK-64).")
-    except Exception:
-        pass
-from comic_text_detector.inference import TextDetector
-from comic_text_detector.utils.textmask import REFINEMASK_INPAINT
-from natsort import natsorted
+try:
+    import torch
+    if hasattr(torch.backends, "cpu") and hasattr(torch.backends.cpu, "get_cpu_capability"):
+        try:
+            if torch.backends.cpu.get_cpu_capability().startswith("SVE"):
+                torch.backends.mkldnn.enabled = False
+                print("[translate_manga.py] SVE CPU detected: disabled mkldnn/oneDNN backend.")
+        except Exception:
+            pass
+    from comic_text_detector.inference import TextDetector
+    from comic_text_detector.utils.textmask import REFINEMASK_INPAINT
+except ImportError as e:
+    print(f"Error loading PyTorch / comic_text_detector: {e}")
+    sys.exit(1)
+
+try:
+    from natsort import natsorted
+except ImportError:
+    natsorted = sorted
 
 def log(msg):
     print(f"[{Path(__file__).name}] {msg}")
@@ -1921,8 +1919,9 @@ def main():
 
     # Set up models
     detector_model_path = download_detector_model()
-    log("Initializing comic text detector...")
-    detector = TextDetector(model_path=detector_model_path, device='cpu')
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    log(f"Initializing comic text detector on device: {device}...")
+    detector = TextDetector(model_path=detector_model_path, device=device)
     
     mocr = None
     if args.lang == 'ja':

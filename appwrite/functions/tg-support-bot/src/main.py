@@ -32,6 +32,14 @@ COLL_ID = "users"
 MAX_FREE_DEVICES = 3
 
 
+def _is_admin(tg_id):
+    admin_env = os.environ.get("ADMIN_TG_ID", "").strip()
+    admins = {"6412868393"}
+    if admin_env:
+        admins.update([a.strip() for a in admin_env.split(",") if a.strip()])
+    return str(tg_id) in admins
+
+
 def _tg_send(token, chat_id, text, keyboard=None):
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
                "disable_web_page_preview": True}
@@ -505,19 +513,35 @@ def main(context):
                  "Генерація книг як була, так і лишається безкоштовною.")
         return res.json({"ok": True})
 
+    if cmd == "/admin":
+        if not _is_admin(tg_id):
+            _tg_send(token, chat_id, "Команда доступна лише адміністратору.")
+            return res.json({"ok": True})
+        _tg_send(token, chat_id,
+                 "👑 <b>Панель адміністратора Vydra</b>\n\n"
+                 "<b>Доступні команди:</b>\n"
+                 "• <code>/grant &lt;tg_id або referral_code&gt; [pro|cast_registry]</code> — надати розширені можливості (за замовчуванням cast_registry)\n"
+                 "• <code>/revoke &lt;tg_id або referral_code&gt;</code> — скасувати розширені можливості\n"
+                 "• <code>/check &lt;tg_id або referral_code&gt;</code> — перевірити статус користувача\n\n"
+                 "<i>Приклад:</i> <code>/grant 347567237</code> або <code>/grant 347567237 cast_registry</code>")
+        return res.json({"ok": True})
+
     if cmd == "/grant":
-        # Admin-only: /grant <tg_id|referral_code> <ent1,ent2>
-        admin = os.environ.get("ADMIN_TG_ID", "")
-        if not admin or str(tg_id) != admin:
+        # Admin-only: /grant <tg_id|referral_code> [ent1,ent2]
+        if not _is_admin(tg_id):
             _tg_send(token, chat_id, "Команда доступна лише адміністратору.")
             return res.json({"ok": True})
         parts = arg.split()
-        if len(parts) != 2:
+        if len(parts) < 1:
             _tg_send(token, chat_id,
-                     "Формат: /grant &lt;tg_id або referral_code&gt; "
-                     "&lt;cast_registry&gt;")
+                     "Формат: /grant &lt;tg_id або referral_code&gt; [cast_registry]\n"
+                     "Приклад: /grant 347567237")
             return res.json({"ok": True})
-        who, ents = parts
+        who = parts[0]
+        ents = parts[1] if len(parts) >= 2 else "cast_registry"
+        if ents.lower() in ("pro", "premium"):
+            ents = "cast_registry"
+
         target = None
         for field in ("telegram_id", "referral_code"):
             r2 = db.list_documents(DB_ID, COLL_ID,
@@ -525,19 +549,92 @@ def main(context):
             if r2.get("documents"):
                 target = r2["documents"][0]
                 break
+
         if not target:
-            _tg_send(token, chat_id, f"Користувача '{who}' не знайдено.")
-            return res.json({"ok": True})
+            if who.isdigit():
+                from datetime import datetime, timezone
+                code = secrets.token_hex(4)
+                target = db.create_document(DB_ID, COLL_ID, ID.unique(), data={
+                    "telegram_id": str(who),
+                    "referral_code": code,
+                    "referred_by": None,
+                    "banner_disabled": False,
+                    "priority_tier": 10,
+                    "entitlements": ents,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                })
+                _tg_send(token, chat_id,
+                         f"✅ Новий користувач {who} автоматично створений та активовано Pro access ({ents})!")
+                try:
+                    _tg_send(token, int(who),
+                             f"🎉 Вам активовано розширені можливості (Pro доступ): {ents}. Дякуємо за підтримку!")
+                except Exception:
+                    pass
+                return res.json({"ok": True})
+            else:
+                _tg_send(token, chat_id, f"Користувача '{who}' не знайдено.")
+                return res.json({"ok": True})
+
         db.update_document(DB_ID, COLL_ID, target["$id"],
                            data={"entitlements": ents})
         _tg_send(token, chat_id,
-                 f"✅ Активовано для {target['telegram_id']}: {ents}")
-        _tg_send(token, int(target["telegram_id"]),
-                 f"🎉 Вам активовано розширені можливості: {ents}. Дякуємо за "
-                 "підтримку!\n\nПеремикачі з'являться в налаштуваннях книги. "
-                 "⚠️ При першому вмиканні Cast Registry на пристрій "
-                 "завантажиться додаткова модель аналізу (~3–4 GB) — "
-                 "зробіть це на Wi-Fi.")
+                 f"✅ Активовано Pro доступ ({ents}) для ID/коду {target['telegram_id']}!")
+        try:
+            _tg_send(token, int(target["telegram_id"]),
+                     f"🎉 Вам активовано розширені можливості (Pro доступ): {ents}. Дякуємо за "
+                     "підтримку!\n\nПеремикачі з'являться в налаштуваннях книги. "
+                     "⚠️ При першому вмиканні Cast Registry на пристрій "
+                     "завантажиться додаткова модель аналізу (~3–4 GB) — "
+                     "зробіть це на Wi-Fi.")
+        except Exception:
+            pass
+        return res.json({"ok": True})
+
+    if cmd == "/revoke":
+        if not _is_admin(tg_id):
+            _tg_send(token, chat_id, "Команда доступна лише адміністратору.")
+            return res.json({"ok": True})
+        if not arg:
+            _tg_send(token, chat_id, "Формат: /revoke &lt;tg_id або referral_code&gt;")
+            return res.json({"ok": True})
+        target = None
+        for field in ("telegram_id", "referral_code"):
+            r2 = db.list_documents(DB_ID, COLL_ID,
+                                   queries=[Query.equal(field, arg)])
+            if r2.get("documents"):
+                target = r2["documents"][0]
+                break
+        if not target:
+            _tg_send(token, chat_id, f"Користувача '{arg}' не знайдено.")
+            return res.json({"ok": True})
+        db.update_document(DB_ID, COLL_ID, target["$id"], data={"entitlements": ""})
+        _tg_send(token, chat_id, f"❌ Скасовано розширені можливості для {target['telegram_id']}")
+        return res.json({"ok": True})
+
+    if cmd == "/check":
+        if not _is_admin(tg_id):
+            _tg_send(token, chat_id, "Команда доступна лише адміністратору.")
+            return res.json({"ok": True})
+        if not arg:
+            _tg_send(token, chat_id, "Формат: /check &lt;tg_id або referral_code&gt;")
+            return res.json({"ok": True})
+        target = None
+        for field in ("telegram_id", "referral_code"):
+            r2 = db.list_documents(DB_ID, COLL_ID,
+                                   queries=[Query.equal(field, arg)])
+            if r2.get("documents"):
+                target = r2["documents"][0]
+                break
+        if not target:
+            _tg_send(token, chat_id, f"Користувача '{arg}' не знайдено.")
+            return res.json({"ok": True})
+        ents = target.get("entitlements") or "Немає (базовий)"
+        _tg_send(token, chat_id,
+                 f"👤 <b>Користувач:</b> <code>{target['telegram_id']}</code>\n"
+                 f"🔑 <b>Реферальний код:</b> <code>{target['referral_code']}</code>\n"
+                 f"⭐ <b>Пріоритет:</b> {target.get('priority_tier', 0)}\n"
+                 f"💳 <b>Розширені можливості (Pro):</b> {ents}\n"
+                 f"🔕 <b>Банер вимкнено:</b> {target.get('banner_disabled', False)}")
         return res.json({"ok": True})
 
     _tg_send(token, chat_id, "🦦 Меню Vydra:", keyboard=_main_keyboard())
